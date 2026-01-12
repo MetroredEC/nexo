@@ -7,33 +7,42 @@
   <link rel="icon" href="favicon.ico" />
   <style>
     :root{
-      --bg:#0b1220;
-      --panel:#111a2e;
-      --panel2:#0f1830;
-      --border:rgba(255,255,255,.10);
-      --muted:#9fb0d0;
-      --text:#eaf0ff;
-      --brand:#7aa7ff;
-      --danger:#ff6b6b;
-      --ok:#41d1a8;
+      --bg:#f5f7fb;
+      --panel:#ffffff;
+      --panel2:#f1f5ff;
+      --border:#e2e8f0;
+      --muted:#667085;
+      --text:#1f2937;
+      --brand:#386cff;
+      --brand-2:#6a5cff;
+      --danger:#e5484d;
+      --ok:#22c55e;
+      --warm:#f6b26b;
+      --shadow:0 14px 34px rgba(15,23,42,.08);
     }
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:radial-gradient(1200px 800px at 20% 0%, #13234a 0%, var(--bg) 55%);
+      background:radial-gradient(1200px 800px at 10% -10%, #e7edff 0%, var(--bg) 52%);
       color:var(--text);
     }
     header{
       display:flex; align-items:center; justify-content:space-between;
       gap:16px; padding:14px 20px;
       border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg, var(--panel2), rgba(15,24,48,.65));
+      background:linear-gradient(180deg, var(--panel2), rgba(241,245,255,.65));
       position:sticky; top:0; z-index:5;
       backdrop-filter: blur(8px);
     }
     .brand{display:flex; align-items:center; gap:14px;}
-    header img{height:34px}
+    .nexo-logo{
+      width:40px; height:40px; border-radius:14px;
+      display:grid; place-items:center;
+      background:linear-gradient(135deg, rgba(56,108,255,.16), rgba(106,92,255,.2));
+      border:1px solid rgba(56,108,255,.2);
+    }
+    .nexo-logo svg{width:30px; height:30px}
     .title{display:flex; flex-direction:column; line-height:1.1}
     .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px}
     .title span{font-size:12px; color:var(--muted)}
@@ -41,83 +50,105 @@
     .chip{
       font-size:12px; padding:6px 10px; border-radius:999px;
       border:1px solid var(--border); color:var(--muted);
-      background:rgba(255,255,255,.04);
+      background:rgba(255,255,255,.8);
       display:flex; gap:8px; align-items:center;
+    }
+    .chip .pulse{
+      position:relative;
+    }
+    .chip .pulse::after{
+      content:"";
+      position:absolute; inset:-4px;
+      border-radius:50%;
+      border:1px solid rgba(56,108,255,.35);
+      animation:pulse 1.8s ease-out infinite;
     }
     .dot{width:8px; height:8px; border-radius:50%;}
     .btn{
       padding:10px 12px; border-radius:12px; border:1px solid var(--border);
-      background:rgba(255,255,255,.04); color:var(--text); cursor:pointer;
+      background:#fff; color:var(--text); cursor:pointer;
       font-weight:700;
+      box-shadow:0 6px 16px rgba(15,23,42,.08);
     }
-    .btn.primary{background:var(--brand); color:#0b1220; border-color:transparent;}
-    .btn.ghost{background:transparent;}
-    main{max-width:1100px; margin:0 auto; padding:18px 18px 26px;}
+    .btn.primary{background:var(--brand); color:#fff; border-color:transparent;}
+    .btn.ghost{background:transparent; box-shadow:none;}
+    main{max-width:1280px; margin:0 auto; padding:18px 18px 26px;}
     .grid{
-      display:grid; grid-template-columns: 1fr 360px; gap:14px;
+      display:grid; grid-template-columns: 1fr 280px; gap:14px;
     }
     @media (max-width: 980px){
       .grid{grid-template-columns:1fr}
     }
     .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      background:var(--panel);
       border:1px solid var(--border);
       border-radius:16px;
       overflow:hidden;
+      box-shadow:var(--shadow);
     }
     .card .hd{
       padding:12px 14px;
       border-bottom:1px solid var(--border);
       display:flex; justify-content:space-between; align-items:center;
-      background:rgba(255,255,255,.02);
+      background:rgba(56,108,255,.06);
     }
     .card .hd h2{margin:0; font-size:13px; letter-spacing:.25px; color:var(--muted); font-weight:800; text-transform:uppercase}
     .card .bd{padding:14px}
     .chat{
-      height:62vh; overflow:auto; padding:14px;
-      background:linear-gradient(180deg, rgba(11,18,32,.75), rgba(17,26,46,.85));
+      height:78vh; overflow:auto; padding:18px;
+      background:linear-gradient(180deg, #fdfdff, #f5f7fb);
     }
-    .msg{margin:0 0 12px 0; display:flex; gap:10px;}
+    .msg{margin:0 0 16px 0; display:flex; gap:10px; align-items:flex-start;}
+    .msg.me{justify-content:flex-end;}
     .avatar{
       width:34px; height:34px; border-radius:12px;
       display:grid; place-items:center; font-weight:900; font-size:12px;
       border:1px solid var(--border);
-      background:rgba(255,255,255,.04);
+      background:#fff;
       flex:0 0 auto;
     }
     .bubble{
-      flex:1;
+      max-width:70%;
       border:1px solid var(--border);
       border-radius:14px;
       padding:10px 12px;
-      background:rgba(255,255,255,.03);
+      background:#fff;
     }
     .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700}
     .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
-    .me .avatar{background:rgba(122,167,255,.18); border-color:rgba(122,167,255,.35)}
-    .me .meta{color:#b8ccff}
-    .bot .avatar{background:rgba(65,209,168,.12); border-color:rgba(65,209,168,.28)}
+    .me .avatar{background:rgba(56,108,255,.14); border-color:rgba(56,108,255,.35)}
+    .me .meta{color:#386cff}
+    .me .bubble{
+      background:rgba(56,108,255,.08);
+      border-color:rgba(56,108,255,.24);
+    }
+    .bot .avatar{background:rgba(106,92,255,.12); border-color:rgba(106,92,255,.28)}
     .inputRow{display:flex; gap:10px; margin-top:12px}
     textarea{
       flex:1; resize:none; padding:12px 12px;
       border-radius:14px;
       border:1px solid var(--border);
-      background:rgba(11,18,32,.85);
+      background:#fff;
       color:var(--text);
       min-height:46px;
       outline:none;
     }
-    textarea:focus{border-color:rgba(122,167,255,.45)}
+    textarea:focus{border-color:rgba(56,108,255,.45)}
     .small{font-size:12px; color:var(--muted); line-height:1.35}
     .kpi{display:flex; flex-wrap:wrap; gap:8px}
     .pill{
       font-size:12px; padding:8px 10px; border-radius:999px;
       border:1px solid var(--border);
-      background:rgba(255,255,255,.03);
+      background:#fff;
       cursor:pointer;
     }
-    .pill:hover{border-color:rgba(122,167,255,.45)}
-    a{color:#b8ccff}
+    .pill:hover{border-color:rgba(56,108,255,.45)}
+    .pill.primary{background:rgba(56,108,255,.12); border-color:rgba(56,108,255,.35)}
+    .hint{
+      padding:10px 12px; border-radius:12px; border:1px solid rgba(255,210,138,.25);
+      background:rgba(255,210,138,.18); color:#8a5a20; font-size:12px;
+    }
+    a{color:#386cff}
     ul{margin:8px 0 0 18px; padding:0}
     li{margin:6px 0}
     footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
@@ -129,11 +160,11 @@
     }
     .modal{
       width:min(720px, 100%);
-      background:linear-gradient(180deg, rgba(17,26,46,.98), rgba(11,18,32,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,247,251,.98));
       border:1px solid var(--border);
       border-radius:18px;
       overflow:hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      box-shadow: 0 20px 60px rgba(15,23,42,.18);
     }
     .modalHd{
       padding:14px 16px; border-bottom:1px solid var(--border);
@@ -149,22 +180,43 @@
       padding:12px 12px;
       border-radius:14px;
       border:1px solid var(--border);
-      background:rgba(11,18,32,.85);
+      background:#fff;
       color:var(--text);
       outline:none;
     }
-    input:focus{border-color:rgba(122,167,255,.45)}
+    input:focus{border-color:rgba(56,108,255,.45)}
     .modalFt{padding:14px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px}
     .warn{color:#ffd28a}
     .err{color:var(--danger)}
     .ok{color:var(--ok)}
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    @keyframes pulse{
+      0%{transform:scale(.7); opacity:.8}
+      100%{transform:scale(1.6); opacity:0}
+    }
   </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <img src="logo.png" alt="Metrored" />
+    <div class="nexo-logo" aria-label="NEXO">
+      <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
+        <defs>
+          <linearGradient id="nexoGlow" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6a5cff" />
+            <stop offset="100%" stop-color="#386cff" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="12" width="48" height="40" rx="18" fill="#fff" stroke="url(#nexoGlow)" stroke-width="2"/>
+        <circle cx="24" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
+        <circle cx="40" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
+        <circle cx="24" cy="32" r="2.4" fill="#386cff"/>
+        <circle cx="40" cy="32" r="2.4" fill="#386cff"/>
+        <rect x="28" y="40" width="8" height="3" rx="1.5" fill="#8aa6ff"/>
+        <circle cx="32" cy="10" r="3" fill="#6a5cff"/>
+        <rect x="31" y="5" width="2" height="8" rx="1" fill="#6a5cff"/>
+      </svg>
+    </div>
     <div class="title">
       <h1>NEXO</h1>
       <span>Asistente Inteligente de Conocimiento Metrored</span>
@@ -173,10 +225,10 @@
 
   <div class="actions">
     <div class="chip" id="statusChip" title="Estado de conexión">
-      <span class="dot" id="statusDot" style="background:var(--danger)"></span>
+      <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
       <span id="statusText">No configurado</span>
     </div>
-    <button class="btn ghost" onclick="openConfig()">Configurar</button>
+    <button class="btn ghost" onclick="openConfig()">Configurar acceso</button>
   </div>
 </header>
 
@@ -184,7 +236,7 @@
   <div class="grid">
     <section class="card">
       <div class="hd">
-        <h2>Consulta</h2>
+        <h2>Conversación</h2>
         <div style="display:flex; gap:10px; align-items:center;">
           <label style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); font-weight:800;">
             <input type="checkbox" id="debugToggle" style="width:16px; height:16px; margin:0;" />
@@ -196,28 +248,36 @@
       <div class="chat" id="chat"></div>
       <div class="bd">
         <div class="inputRow">
-          <textarea id="q" placeholder="Escribe tu consulta (procedimientos, seguros, políticas internas)…" onkeydown="handleKey(event)"></textarea>
+          <textarea id="q" placeholder="Escribe tu consulta como en ChatGPT, pero con fuentes Metrored…" onkeydown="handleKey(event)"></textarea>
           <button class="btn primary" onclick="send()">Enviar</button>
         </div>
         <div class="small" style="margin-top:10px">
-          NEXO responde <b>solo</b> con evidencia de documentos oficiales. Si no encuentra soporte, lo dirá explícitamente y sugerirá dónde buscar.
+          NEXO responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara y sugerirá dónde buscar.
         </div>
       </div>
     </section>
 
     <aside class="card">
       <div class="hd">
-        <h2>Copilot operativo</h2>
+        <h2>Atajos rápidos</h2>
       </div>
       <div class="bd">
-        <div class="small">
-          Usa estos atajos para preguntas frecuentes. NEXO intentará responder con enlaces directos a fuentes.
-        </div>
+        <div class="small">Usa estos atajos para preguntas frecuentes. NEXO intentará responder con enlaces directos a fuentes.</div>
         <div class="kpi" style="margin-top:12px">
-          <div class="pill" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
+          <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
           <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?')">Preparación colonoscopía</div>
           <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general')">Copago Saludsa Masivos</div>
           <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?')">Política admisión</div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+
+        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Momento amable</h3>
+        <div class="hint">
+          🤖 <b>Tip del día:</b> si un documento no aparece, intenta buscar por “código de seguro + procedimiento”.
+        </div>
+        <div style="margin-top:12px" class="small">
+          <b>Desafío:</b> completa 3 consultas con fuentes hoy y desbloquea el badge “Cazador de evidencia”.
         </div>
 
         <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
@@ -335,7 +395,7 @@
 
   function clearChat(){
     chatEl.innerHTML = "";
-    addMsg("bot","NEXO","Hola. Soy NEXO. Puedo ayudarte con seguros, procedimientos y políticas internas de Metrored. Siempre que sea posible citaré la fuente.");
+    addMsg("bot","NEXO","¡Hola! Soy NEXO, tu copiloto Metrored. Puedes escribirme como en ChatGPT y siempre responderé con fuentes oficiales cuando estén disponibles.");
   }
 
   function openConfig(){

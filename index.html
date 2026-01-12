@@ -14,14 +14,16 @@
       --muted:#9fb0d0;
       --text:#eaf0ff;
       --brand:#7aa7ff;
+      --brand-2:#9d7bff;
       --danger:#ff6b6b;
       --ok:#41d1a8;
+      --warm:#ffd28a;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:radial-gradient(1200px 800px at 20% 0%, #13234a 0%, var(--bg) 55%);
+      background:radial-gradient(1200px 800px at 20% 0%, #182b5a 0%, var(--bg) 55%);
       color:var(--text);
     }
     header{
@@ -44,6 +46,16 @@
       background:rgba(255,255,255,.04);
       display:flex; gap:8px; align-items:center;
     }
+    .chip .pulse{
+      position:relative;
+    }
+    .chip .pulse::after{
+      content:"";
+      position:absolute; inset:-4px;
+      border-radius:50%;
+      border:1px solid rgba(122,167,255,.35);
+      animation:pulse 1.8s ease-out infinite;
+    }
     .dot{width:8px; height:8px; border-radius:50%;}
     .btn{
       padding:10px 12px; border-radius:12px; border:1px solid var(--border);
@@ -64,6 +76,43 @@
       border:1px solid var(--border);
       border-radius:16px;
       overflow:hidden;
+    }
+    .hero{
+      display:grid; grid-template-columns: 1.3fr 1fr; gap:14px;
+      padding:18px;
+      background:
+        radial-gradient(520px 280px at 0% 0%, rgba(122,167,255,.18), transparent 70%),
+        radial-gradient(360px 220px at 100% 0%, rgba(157,123,255,.22), transparent 70%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      margin-bottom:14px;
+    }
+    .hero h2{margin:0 0 8px 0; font-size:20px}
+    .hero p{margin:0; color:var(--muted)}
+    .hero .spark{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background:rgba(255,255,255,.06); border:1px solid var(--border);
+      font-size:12px; color:#d5e3ff; font-weight:700;
+    }
+    .heroStats{display:grid; gap:10px}
+    .stat{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:13px;
+    }
+    .stat b{font-size:18px}
+    .progress{
+      height:8px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden;
+    }
+    .progress span{
+      display:block; height:100%;
+      background:linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+    .badgeRow{display:flex; flex-wrap:wrap; gap:8px}
+    .badge{
+      padding:6px 10px; border-radius:999px; border:1px dashed rgba(255,255,255,.18);
+      font-size:12px; color:#dfe8ff; background:rgba(255,255,255,.02);
     }
     .card .hd{
       padding:12px 14px;
@@ -117,6 +166,11 @@
       cursor:pointer;
     }
     .pill:hover{border-color:rgba(122,167,255,.45)}
+    .pill.primary{background:rgba(122,167,255,.18); border-color:rgba(122,167,255,.45)}
+    .hint{
+      padding:10px 12px; border-radius:12px; border:1px solid rgba(255,210,138,.25);
+      background:rgba(255,210,138,.08); color:#ffe1b4; font-size:12px;
+    }
     a{color:#b8ccff}
     ul{margin:8px 0 0 18px; padding:0}
     li{margin:6px 0}
@@ -159,6 +213,10 @@
     .err{color:var(--danger)}
     .ok{color:var(--ok)}
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    @keyframes pulse{
+      0%{transform:scale(.7); opacity:.8}
+      100%{transform:scale(1.6); opacity:0}
+    }
   </style>
 </head>
 <body>
@@ -173,14 +231,44 @@
 
   <div class="actions">
     <div class="chip" id="statusChip" title="Estado de conexión">
-      <span class="dot" id="statusDot" style="background:var(--danger)"></span>
+      <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
       <span id="statusText">No configurado</span>
     </div>
-    <button class="btn ghost" onclick="openConfig()">Configurar</button>
+    <button class="btn ghost" onclick="openConfig()">Configurar acceso</button>
   </div>
 </header>
 
 <main>
+  <section class="card hero">
+    <div>
+      <span class="spark">✨ Tu copiloto en caja</span>
+      <h2 id="greeting">Hola, ¡qué bueno verte!</h2>
+      <p>
+        Todo listo para ayudarte con procedimientos, seguros y políticas internas. Haz tu consulta y recibe respuestas
+        con evidencia clara en segundos.
+      </p>
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn primary" onclick="quick('Necesito el paso a paso para un reembolso en caja')">Resolver un caso</button>
+        <button class="btn" onclick="quick('¿Qué documentos debo pedir para admisión de pacientes?')">Revisar admisión</button>
+      </div>
+    </div>
+    <div class="heroStats">
+      <div class="stat">
+        <div>Consultas resueltas hoy</div>
+        <b>12</b>
+      </div>
+      <div>
+        <div class="small" style="margin-bottom:6px">Meta semanal (50)</div>
+        <div class="progress"><span style="width:64%"></span></div>
+      </div>
+      <div class="badgeRow">
+        <span class="badge">🏅 Precisión</span>
+        <span class="badge">💬 Feedback positivo</span>
+        <span class="badge">⚡ Respuesta rápida</span>
+      </div>
+    </div>
+  </section>
+
   <div class="grid">
     <section class="card">
       <div class="hd">
@@ -196,28 +284,36 @@
       <div class="chat" id="chat"></div>
       <div class="bd">
         <div class="inputRow">
-          <textarea id="q" placeholder="Escribe tu consulta (procedimientos, seguros, políticas internas)…" onkeydown="handleKey(event)"></textarea>
-          <button class="btn primary" onclick="send()">Enviar</button>
+          <textarea id="q" placeholder="Cuéntame tu caso (procedimientos, seguros, políticas internas)…" onkeydown="handleKey(event)"></textarea>
+          <button class="btn primary" onclick="send()">Enviar consulta</button>
         </div>
         <div class="small" style="margin-top:10px">
-          NEXO responde <b>solo</b> con evidencia de documentos oficiales. Si no encuentra soporte, lo dirá explícitamente y sugerirá dónde buscar.
+          NEXO responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara y sugerirá dónde buscar.
         </div>
       </div>
     </section>
 
     <aside class="card">
       <div class="hd">
-        <h2>Copilot operativo</h2>
+        <h2>Atajos que te cuidan el tiempo</h2>
       </div>
       <div class="bd">
-        <div class="small">
-          Usa estos atajos para preguntas frecuentes. NEXO intentará responder con enlaces directos a fuentes.
-        </div>
+        <div class="small">Usa estos atajos para preguntas frecuentes. NEXO intentará responder con enlaces directos a fuentes.</div>
         <div class="kpi" style="margin-top:12px">
-          <div class="pill" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
+          <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
           <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?')">Preparación colonoscopía</div>
           <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general')">Copago Saludsa Masivos</div>
           <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?')">Política admisión</div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+
+        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Momento de engagement</h3>
+        <div class="hint">
+          💡 <b>Tip del día:</b> si un documento no aparece, intenta buscar por “código de seguro + procedimiento”.
+        </div>
+        <div style="margin-top:12px" class="small">
+          <b>Desafío:</b> completa 3 consultas con fuentes hoy y desbloquea el badge “Cazador de evidencia”.
         </div>
 
         <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
@@ -335,7 +431,7 @@
 
   function clearChat(){
     chatEl.innerHTML = "";
-    addMsg("bot","NEXO","Hola. Soy NEXO. Puedo ayudarte con seguros, procedimientos y políticas internas de Metrored. Siempre que sea posible citaré la fuente.");
+    addMsg("bot","NEXO","¡Hola! Soy NEXO, tu copiloto en caja. Estoy listo para ayudarte con seguros, procedimientos y políticas internas de Metrored. Siempre que sea posible citaré la fuente.");
   }
 
   function openConfig(){
@@ -444,8 +540,14 @@
   }
 
   // Init
+  function setGreeting(){
+    const hour = new Date().getHours();
+    const label = hour < 12 ? "¡Buenos días!" : (hour < 19 ? "¡Buenas tardes!" : "¡Buenas noches!");
+    document.getElementById("greeting").textContent = `${label} Gracias por cuidar a nuestros pacientes.`;
+  }
   clearChat();
   refreshStatus();
+  setGreeting();
   if(!getGateKey()){
     // Force config on first run
     setTimeout(openConfig, 250);

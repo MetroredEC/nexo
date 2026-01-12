@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>NEXO | Metrored</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon.ico" />
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#111a2e;
+      --panel2:#0f1830;
+      --border:rgba(255,255,255,.10);
+      --muted:#9fb0d0;
+      --text:#eaf0ff;
+      --brand:#7aa7ff;
+      --danger:#ff6b6b;
+      --ok:#41d1a8;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:radial-gradient(1200px 800px at 20% 0%, #13234a 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; padding:14px 20px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg, var(--panel2), rgba(15,24,48,.65));
+      position:sticky; top:0; z-index:5;
+      backdrop-filter: blur(8px);
+    }
+    .brand{display:flex; align-items:center; gap:14px;}
+    header img{height:34px}
+    .title{display:flex; flex-direction:column; line-height:1.1}
+    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px}
+    .title span{font-size:12px; color:var(--muted)}
+    .actions{display:flex; gap:10px; align-items:center;}
+    .chip{
+      font-size:12px; padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); color:var(--muted);
+      background:rgba(255,255,255,.04);
+      display:flex; gap:8px; align-items:center;
+    }
+    .dot{width:8px; height:8px; border-radius:50%;}
+    .btn{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,.04); color:var(--text); cursor:pointer;
+      font-weight:700;
+    }
+    .btn.primary{background:var(--brand); color:#0b1220; border-color:transparent;}
+    .btn.ghost{background:transparent;}
+    main{max-width:1100px; margin:0 auto; padding:18px 18px 26px;}
+    .grid{
+      display:grid; grid-template-columns: 1fr 360px; gap:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:16px;
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+      background:rgba(255,255,255,.02);
+    }
+    .card .hd h2{margin:0; font-size:13px; letter-spacing:.25px; color:var(--muted); font-weight:800; text-transform:uppercase}
+    .card .bd{padding:14px}
+    .chat{
+      height:62vh; overflow:auto; padding:14px;
+      background:linear-gradient(180deg, rgba(11,18,32,.75), rgba(17,26,46,.85));
+    }
+    .msg{margin:0 0 12px 0; display:flex; gap:10px;}
+    .avatar{
+      width:34px; height:34px; border-radius:12px;
+      display:grid; place-items:center; font-weight:900; font-size:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      flex:0 0 auto;
+    }
+    .bubble{
+      flex:1;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.03);
+    }
+    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700}
+    .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
+    .me .avatar{background:rgba(122,167,255,.18); border-color:rgba(122,167,255,.35)}
+    .me .meta{color:#b8ccff}
+    .bot .avatar{background:rgba(65,209,168,.12); border-color:rgba(65,209,168,.28)}
+    .inputRow{display:flex; gap:10px; margin-top:12px}
+    textarea{
+      flex:1; resize:none; padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(11,18,32,.85);
+      color:var(--text);
+      min-height:46px;
+      outline:none;
+    }
+    textarea:focus{border-color:rgba(122,167,255,.45)}
+    .small{font-size:12px; color:var(--muted); line-height:1.35}
+    .kpi{display:flex; flex-wrap:wrap; gap:8px}
+    .pill{
+      font-size:12px; padding:8px 10px; border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      cursor:pointer;
+    }
+    .pill:hover{border-color:rgba(122,167,255,.45)}
+    a{color:#b8ccff}
+    ul{margin:8px 0 0 18px; padding:0}
+    li{margin:6px 0}
+    footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
+    /* Modal */
+    .modalBackdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.6);
+      display:none; align-items:center; justify-content:center; z-index:50;
+      padding:18px;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background:linear-gradient(180deg, rgba(17,26,46,.98), rgba(11,18,32,.98));
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    .modalHd{
+      padding:14px 16px; border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modalHd h3{margin:0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
+    .modalBd{padding:16px}
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px; font-weight:800}
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(11,18,32,.85);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus{border-color:rgba(122,167,255,.45)}
+    .modalFt{padding:14px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px}
+    .warn{color:#ffd28a}
+    .err{color:var(--danger)}
+    .ok{color:var(--ok)}
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="Metrored" />
+    <div class="title">
+      <h1>NEXO</h1>
+      <span>Asistente Inteligente de Conocimiento Metrored</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="chip" id="statusChip" title="Estado de conexión">
+      <span class="dot" id="statusDot" style="background:var(--danger)"></span>
+      <span id="statusText">No configurado</span>
+    </div>
+    <button class="btn ghost" onclick="openConfig()">Configurar</button>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <div class="hd">
+        <h2>Consulta</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <label style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); font-weight:800;">
+            <input type="checkbox" id="debugToggle" style="width:16px; height:16px; margin:0;" />
+            Debug
+          </label>
+          <button class="btn" onclick="clearChat()">Limpiar</button>
+        </div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="bd">
+        <div class="inputRow">
+          <textarea id="q" placeholder="Escribe tu consulta (procedimientos, seguros, políticas internas)…" onkeydown="handleKey(event)"></textarea>
+          <button class="btn primary" onclick="send()">Enviar</button>
+        </div>
+        <div class="small" style="margin-top:10px">
+          NEXO responde <b>solo</b> con evidencia de documentos oficiales. Si no encuentra soporte, lo dirá explícitamente y sugerirá dónde buscar.
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="hd">
+        <h2>Copilot operativo</h2>
+      </div>
+      <div class="bd">
+        <div class="small">
+          Usa estos atajos para preguntas frecuentes. NEXO intentará responder con enlaces directos a fuentes.
+        </div>
+        <div class="kpi" style="margin-top:12px">
+          <div class="pill" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
+          <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?')">Preparación colonoscopía</div>
+          <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general')">Copago Saludsa Masivos</div>
+          <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?')">Política admisión</div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+
+        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Sobre NEXO</h3>
+        <div class="small">
+          <b>Qué es:</b> una herramienta interna para consultar procedimientos, seguros y políticas con trazabilidad.<br><br>
+          <b>Qué no hace:</b> no inventa procesos ni reemplaza instructivos oficiales.<br><br>
+          <b>Fuentes:</b> siempre que sea posible, muestra enlaces al documento exacto.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    NEXO · Sistema Inteligente de Conocimiento · Metrored © 2026
+  </footer>
+</main>
+
+<!-- Config Modal -->
+<div class="modalBackdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modalHd">
+      <h3>Configuración</h3>
+      <button class="btn ghost" onclick="closeConfig()">Cerrar</button>
+    </div>
+    <div class="modalBd">
+      <div class="small">
+        Para proteger Metrored, este front <b>no incluye</b> el Gate Key dentro del código. Lo ingresarás aquí y se guardará en <b>session</b> (se borra al cerrar el navegador).
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div>
+          <label>Worker URL</label>
+          <input id="cfgWorker" placeholder="https://TU-WORKER.workers.dev" />
+          <div class="small" style="margin-top:6px">Se guarda en <b>este dispositivo</b> para evitar reconfigurar cada vez.</div>
+        </div>
+        <div>
+          <label>Gate Key (APP_GATE_KEY)</label>
+          <input id="cfgGate" placeholder="Pega aquí el Gate Key" type="password" />
+          <div class="small warn" style="margin-top:6px">No lo pegues en chats ni lo envíes por correo.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="small">
+        <div><b>Prueba rápida:</b> NEXO hará un ping a <code>/health</code> para confirmar conexión.</div>
+        <div id="testResult" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="modalFt">
+      <button class="btn" onclick="testConnection()">Probar conexión</button>
+      <button class="btn primary" onclick="saveConfig()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Storage policy:
+  // - worker URL: localStorage (ok)
+  // - gate key: sessionStorage (clears on browser close)
+  const LS_WORKER = "nexo_worker_url";
+  const SS_GATE = "nexo_gate_key";
+  const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
+
+  function getWorkerUrl(){
+    return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
+  }
+  function getGateKey(){
+    return sessionStorage.getItem(SS_GATE) || "";
+  }
+  function setStatus(ok, text){
+    document.getElementById("statusDot").style.background = ok ? "var(--ok)" : "var(--danger)";
+    document.getElementById("statusText").textContent = text;
+  }
+
+  const chatEl = document.getElementById("chat");
+  function addMsg(role, who, text){
+    const div = document.createElement("div");
+    div.className = "msg " + (role === "me" ? "me" : "bot");
+    div.innerHTML = `
+      <div class="avatar">${role === "me" ? "TÚ" : "NEXO"}</div>
+      <div class="bubble">
+        <div class="meta">${who}</div>
+        <p></p>
+      </div>`;
+    div.querySelector("p").textContent = text;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function addBotHtml(title, answer, sources){
+    const div = document.createElement("div");
+    div.className = "msg bot";
+    const srcHtml = (sources && sources.length)
+      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.08)">
+           <div class="meta">Fuentes</div>
+           <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
+         </div>`
+      : "";
+    div.innerHTML = `
+      <div class="avatar">NEXO</div>
+      <div class="bubble">
+        <div class="meta">${escapeHtml(title)}</div>
+        <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
+        ${srcHtml}
+      </div>`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function escapeHtml(s){
+    return String(s || "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function clearChat(){
+    chatEl.innerHTML = "";
+    addMsg("bot","NEXO","Hola. Soy NEXO. Puedo ayudarte con seguros, procedimientos y políticas internas de Metrored. Siempre que sea posible citaré la fuente.");
+  }
+
+  function openConfig(){
+    document.getElementById("cfgWorker").value = getWorkerUrl();
+    document.getElementById("cfgGate").value = getGateKey();
+    document.getElementById("testResult").innerHTML = "";
+    document.getElementById("modalBackdrop").style.display = "flex";
+  }
+  function closeConfig(){
+    document.getElementById("modalBackdrop").style.display = "none";
+  }
+  async function testConnection(){
+    const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
+    const gate = (document.getElementById("cfgGate").value || "").trim();
+    const el = document.getElementById("testResult");
+    el.innerHTML = "Probando…";
+    try{
+      const r = await fetch(worker + "/health", {
+        method:"GET",
+        headers: gate ? { "Authorization":"Bearer " + gate } : {}
+      });
+      const t = await r.text();
+      if(r.ok){
+        el.innerHTML = `<span class="ok">OK</span> · ${escapeHtml(t || "Conectado")}`;
+      }else{
+        el.innerHTML = `<span class="err">ERROR</span> · Status ${r.status} · ${escapeHtml(t)}`;
+      }
+    }catch(e){
+      el.innerHTML = `<span class="err">ERROR</span> · ${escapeHtml(e.message || String(e))}`;
+    }
+  }
+  function saveConfig(){
+    const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
+    const gate = (document.getElementById("cfgGate").value || "").trim();
+    if(!worker){
+      document.getElementById("testResult").innerHTML = `<span class="err">Falta Worker URL</span>`;
+      return;
+    }
+    localStorage.setItem(LS_WORKER, worker);
+    if(gate){
+      sessionStorage.setItem(SS_GATE, gate);
+    }else{
+      sessionStorage.removeItem(SS_GATE);
+    }
+    closeConfig();
+    refreshStatus();
+  }
+
+  function refreshStatus(){
+    const worker = getWorkerUrl();
+    const gate = getGateKey();
+    if(!gate){
+      setStatus(false, "Falta Gate Key");
+      return;
+    }
+    setStatus(true, "Listo");
+  }
+
+  function handleKey(e){
+    if(e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  }
+  function quick(text){
+    document.getElementById("q").value = text;
+    send();
+  }
+
+  async function send(){
+    const q = document.getElementById("q");
+    const question = (q.value || "").trim();
+    if(!question) return;
+
+    const worker = getWorkerUrl();
+    const gate = getGateKey();
+    const debug = document.getElementById("debugToggle").checked;
+
+    if(!gate){
+      openConfig();
+      document.getElementById("testResult").innerHTML = `<span class="warn">Configura el Gate Key para continuar.</span>`;
+      return;
+    }
+
+    addMsg("me","Tú",question);
+    q.value = "";
+
+    try{
+      const r = await fetch(worker + "/chat", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":"Bearer " + gate
+        },
+        body: JSON.stringify({ question, debug })
+      });
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        addMsg("bot","NEXO", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status));
+        return;
+      }
+      addBotHtml("NEXO", j.answer || "Sin respuesta", j.sources || []);
+    }catch(e){
+      addMsg("bot","NEXO","Error de conexión: " + (e.message || String(e)));
+    }
+  }
+
+  // Init
+  clearChat();
+  refreshStatus();
+  if(!getGateKey()){
+    // Force config on first run
+    setTimeout(openConfig, 250);
+  }
+</script>
+</body>
+</html>

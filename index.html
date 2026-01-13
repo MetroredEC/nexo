@@ -289,6 +289,15 @@
         <h2>Atajos rápidos</h2>
       </div>
       <div class="bd">
+        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Alcance de búsqueda</h3>
+        <div class="kpi">
+          <div class="pill" id="scopeInternal" onclick="setScope('internal')">Sistema de Gestión de la Calidad</div>
+          <div class="pill" id="scopeInsurance" onclick="setScope('insurance')">Procesos Aseguradoras</div>
+        </div>
+        <div class="small" id="scopeStatus" style="margin-top:8px">Buscando en: --</div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+
         <div class="small">Usa estos atajos para preguntas frecuentes. Nexo intentará responder con enlaces directos a fuentes.</div>
         <div class="kpi" style="margin-top:12px">
           <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
@@ -377,7 +386,30 @@
   // - gate key: sessionStorage (clears on browser close)
   const LS_WORKER = "nexo_worker_url";
   const SS_GATE = "nexo_gate_key";
+  const LS_SCOPE = "nexo_scope";
   const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
+  const DEFAULT_SCOPE = "insurance";
+
+  function getScope(){
+    return localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE;
+  }
+  function setScope(scope){
+    localStorage.setItem(LS_SCOPE, scope);
+    refreshScopeUI();
+  }
+  function refreshScopeUI(){
+    const scope = getScope();
+    const internalBtn = document.getElementById("scopeInternal");
+    const insuranceBtn = document.getElementById("scopeInsurance");
+    const scopeLabel = document.getElementById("scopeStatus");
+    if(!internalBtn || !insuranceBtn || !scopeLabel) return;
+
+    internalBtn.classList.toggle("primary", scope === "internal");
+    insuranceBtn.classList.toggle("primary", scope === "insurance");
+    scopeLabel.textContent = scope === "internal"
+      ? "Buscando en: Sistema de Gestión de la Calidad"
+      : "Buscando en: Procesos Aseguradoras";
+  }
 
   function getWorkerUrl(){
     return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
@@ -532,6 +564,7 @@
     const worker = getWorkerUrl();
     const gate = getGateKey();
     const debug = document.getElementById("debugToggle").checked;
+    const scope = getScope();
 
     if(!gate){
       openConfig();
@@ -549,7 +582,7 @@
           "Content-Type":"application/json",
           "Authorization":"Bearer " + gate
         },
-        body: JSON.stringify({ question, debug })
+        body: JSON.stringify({ question, debug, scope })
       });
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
@@ -565,6 +598,7 @@
   // Init
   clearChat();
   refreshStatus();
+  refreshScopeUI();
   if(!getGateKey()){
     // Force config on first run
     setTimeout(openConfig, 250);

@@ -46,8 +46,10 @@
       display:grid; place-items:center;
       background:linear-gradient(135deg, rgba(56,108,255,.16), rgba(106,92,255,.2));
       border:1px solid rgba(56,108,255,.2);
+      overflow:hidden;
     }
-    .nexo-logo svg{width:30px; height:30px}
+    /* ✅ Avatar oficial por PNG (coloca avatar.png junto al index.html) */
+    .nexo-logo img{width:100%; height:100%; object-fit:cover}
     .title{display:flex; flex-direction:column; line-height:1.1}
     .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px}
     .title span{font-size:12px; color:var(--muted)}
@@ -58,9 +60,7 @@
       background:rgba(255,255,255,.8);
       display:flex; gap:8px; align-items:center;
     }
-    .chip .pulse{
-      position:relative;
-    }
+    .chip .pulse{position:relative;}
     .chip .pulse::after{
       content:"";
       position:absolute; inset:-4px;
@@ -77,6 +77,7 @@
     }
     .btn.primary{background:var(--brand); color:#fff; border-color:transparent;}
     .btn.ghost{background:transparent; box-shadow:none;}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
     main{
       max-width:1280px;
       margin:0 auto;
@@ -86,10 +87,12 @@
       flex-direction:column;
     }
     .grid{
-      display:grid; grid-template-columns: 1fr 280px; gap:14px;
+      display:grid; grid-template-columns: 1fr 320px; gap:14px;
       flex:1; min-height:0;
     }
     @media (max-width: 980px){
+      body{overflow:auto; height:auto}
+      main{height:auto}
       .grid{grid-template-columns:1fr}
     }
     .card{
@@ -120,8 +123,10 @@
       border:1px solid var(--border);
       background:#fff;
       flex:0 0 auto;
+      overflow:hidden;
     }
-    .avatar.bot svg{width:26px; height:26px}
+    /* ✅ Avatar en chat por PNG */
+    .avatar.bot img{width:100%; height:100%; object-fit:cover}
     .bubble{
       max-width:70%;
       border:1px solid var(--border);
@@ -129,14 +134,18 @@
       padding:10px 12px;
       background:#fff;
     }
-    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700}
+    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center}
+    .meta .tag{
+      font-size:11px; padding:3px 8px; border-radius:999px;
+      border:1px solid rgba(56,108,255,.2);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:800;
+    }
     .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
     .me .avatar{background:rgba(56,108,255,.14); border-color:rgba(56,108,255,.35)}
     .me .meta{color:#386cff}
-    .me .bubble{
-      background:rgba(56,108,255,.08);
-      border-color:rgba(56,108,255,.24);
-    }
+    .me .bubble{background:rgba(56,108,255,.08); border-color:rgba(56,108,255,.24);}
     .bot .avatar{background:rgba(106,92,255,.12); border-color:rgba(106,92,255,.28)}
     .inputRow{display:flex; gap:10px; margin-top:12px}
     textarea{
@@ -152,13 +161,15 @@
     .small{font-size:12px; color:var(--muted); line-height:1.35}
     .kpi{display:flex; flex-wrap:wrap; gap:8px}
     .pill{
-      font-size:12px; padding:8px 10px; border-radius:999px;
+      font-size:12px; padding:10px 12px; border-radius:999px; /* ✅ más grande */
       border:1px solid var(--border);
       background:#fff;
       cursor:pointer;
+      user-select:none;
     }
     .pill:hover{border-color:rgba(56,108,255,.45)}
     .pill.primary{background:rgba(56,108,255,.12); border-color:rgba(56,108,255,.35)}
+    .pillRow{display:flex; gap:8px; flex-wrap:wrap}
     .hint{
       padding:10px 12px; border-radius:12px; border:1px solid rgba(255,210,138,.25);
       background:rgba(255,210,138,.18); color:#8a5a20; font-size:12px;
@@ -183,6 +194,7 @@
     ul{margin:8px 0 0 18px; padding:0}
     li{margin:6px 0}
     footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
+
     /* Modal */
     .modalBackdrop{
       position:fixed; inset:0; background:rgba(0,0,0,.6);
@@ -230,23 +242,9 @@
 <body>
 <header>
   <div class="brand">
-    <div class="nexo-logo" aria-label="Nexo">
-      <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
-        <defs>
-          <linearGradient id="nexoGlow" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#6a5cff" />
-            <stop offset="100%" stop-color="#386cff" />
-          </linearGradient>
-        </defs>
-        <rect x="8" y="12" width="48" height="40" rx="18" fill="#fff" stroke="url(#nexoGlow)" stroke-width="2"/>
-        <circle cx="24" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
-        <circle cx="40" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
-        <circle cx="24" cy="32" r="2.4" fill="#386cff"/>
-        <circle cx="40" cy="32" r="2.4" fill="#386cff"/>
-        <rect x="28" y="40" width="8" height="3" rx="1.5" fill="#8aa6ff"/>
-        <circle cx="32" cy="10" r="3" fill="#6a5cff"/>
-        <rect x="31" y="5" width="2" height="8" rx="1" fill="#6a5cff"/>
-      </svg>
+    <div class="nexo-logo" aria-label="Nexo" title="Nexo">
+      <!-- ✅ Pon aquí tu imagen oficial -->
+      <img src="avatar.png" alt="Nexo" />
     </div>
     <div class="title">
       <h1>Nexo</h1>
@@ -272,14 +270,16 @@
           <button class="btn" onclick="clearChat()">Limpiar</button>
         </div>
       </div>
+
       <div class="chat" id="chat"></div>
+
       <div class="bd">
         <div class="inputRow">
-          <textarea id="q" placeholder="Escribe tu consulta como en ChatGPT, pero con fuentes Metrored…" onkeydown="handleKey(event)"></textarea>
-          <button class="btn primary" onclick="send()">Enviar</button>
+          <textarea id="q" placeholder="Escribe tu consulta… (Enter para enviar, Shift+Enter para salto de línea)" onkeydown="handleKey(event)"></textarea>
+          <button class="btn primary" id="sendBtn" onclick="send()">Enviar</button>
         </div>
         <div class="small" style="margin-top:10px">
-          Nexo responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara y sugerirá dónde buscar.
+          Nexo responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara.
         </div>
       </div>
     </section>
@@ -290,7 +290,7 @@
       </div>
       <div class="bd">
         <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Alcance de búsqueda</h3>
-        <div class="kpi">
+        <div class="pillRow">
           <div class="pill" id="scopeInternal" onclick="setScope('internal')">Sistema de Gestión de la Calidad</div>
           <div class="pill" id="scopeInsurance" onclick="setScope('insurance')">Procesos Aseguradoras</div>
         </div>
@@ -298,12 +298,13 @@
 
         <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
 
-        <div class="small">Usa estos atajos para preguntas frecuentes. Nexo intentará responder con enlaces directos a fuentes.</div>
+        <div class="small">Atajos (configurados por tu equipo):</div>
         <div class="kpi" style="margin-top:12px">
-          <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?')">Reembolso en caja</div>
-          <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?')">Preparación colonoscopía</div>
-          <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general')">Copago Saludsa Masivos</div>
-          <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?')">Política admisión</div>
+          <!-- ✅ Estos atajos también fuerzan scope para evitar confusión -->
+          <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?','internal')">Reembolso en caja</div>
+          <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?','internal')">Preparación colonoscopía</div>
+          <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general','insurance')">Copago Saludsa Masivos</div>
+          <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?','internal')">Política admisión</div>
         </div>
 
         <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
@@ -346,13 +347,13 @@
     </div>
     <div class="modalBd">
       <div class="small">
-        Para proteger Metrored, este front <b>no incluye</b> el Gate Key dentro del código. Lo ingresarás aquí y se guardará en <b>session</b> (se borra al cerrar el navegador).
+        Para proteger Metrored, este front <b>no incluye</b> el Gate Key dentro del código. Se guardará en <b>session</b> (se borra al cerrar el navegador).
       </div>
       <div class="row" style="margin-top:14px">
         <div>
           <label>Worker URL</label>
           <input id="cfgWorker" placeholder="https://TU-WORKER.workers.dev" />
-          <div class="small" style="margin-top:6px">Se guarda en <b>este dispositivo</b> para evitar reconfigurar cada vez.</div>
+          <div class="small" style="margin-top:6px">Se guarda en <b>este dispositivo</b>.</div>
         </div>
         <div>
           <label>Gate Key (APP_GATE_KEY)</label>
@@ -387,11 +388,12 @@
   const LS_WORKER = "nexo_worker_url";
   const SS_GATE = "nexo_gate_key";
   const LS_SCOPE = "nexo_scope";
+
   const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
-  const DEFAULT_SCOPE = "insurance";
+  const DEFAULT_SCOPE = "insurance"; // ✅ arranca en aseguradoras
 
   function getScope(){
-    return localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE;
+    return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
   }
   function setScope(scope){
     localStorage.setItem(LS_SCOPE, scope);
@@ -423,34 +425,21 @@
   }
 
   const chatEl = document.getElementById("chat");
-  const botAvatarSvg = `
-    <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
-      <defs>
-        <linearGradient id="nexoGlowSmall" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#6a5cff" />
-          <stop offset="100%" stop-color="#386cff" />
-        </linearGradient>
-      </defs>
-      <rect x="8" y="12" width="48" height="40" rx="18" fill="#fff" stroke="url(#nexoGlowSmall)" stroke-width="2"/>
-      <circle cx="24" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
-      <circle cx="40" cy="32" r="6" fill="#e8f0ff" stroke="#386cff" stroke-width="2"/>
-      <circle cx="24" cy="32" r="2.4" fill="#386cff"/>
-      <circle cx="40" cy="32" r="2.4" fill="#386cff"/>
-      <rect x="28" y="40" width="8" height="3" rx="1.5" fill="#8aa6ff"/>
-      <circle cx="32" cy="10" r="3" fill="#6a5cff"/>
-      <rect x="31" y="5" width="2" height="8" rx="1" fill="#6a5cff"/>
-    </svg>`;
+  const botAvatarHtml = `<img src="avatar.png" alt="Nexo" />`;
 
-  function addMsg(role, who, text){
+  function addMsg(role, who, text, metaTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
     const avatar = role === "me"
       ? `<div class="avatar">Tú</div>`
-      : `<div class="avatar bot">${botAvatarSvg}</div>`;
+      : `<div class="avatar bot">${botAvatarHtml}</div>`;
+
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+
     div.innerHTML = `
       ${avatar}
       <div class="bubble">
-        <div class="meta">${who}</div>
+        <div class="meta">${escapeHtml(who)} ${tagHtml}</div>
         <p></p>
       </div>`;
     div.querySelector("p").textContent = text;
@@ -458,7 +447,7 @@
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function addBotHtml(title, answer, sources){
+  function addBotHtml(title, answer, sources, metaTag){
     const div = document.createElement("div");
     div.className = "msg bot";
     const srcHtml = (sources && sources.length)
@@ -467,10 +456,12 @@
            <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
          </div>`
       : "";
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+
     div.innerHTML = `
-      <div class="avatar bot">${botAvatarSvg}</div>
+      <div class="avatar bot">${botAvatarHtml}</div>
       <div class="bubble">
-        <div class="meta">${escapeHtml(title)}</div>
+        <div class="meta">${escapeHtml(title)} ${tagHtml}</div>
         <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
         ${srcHtml}
       </div>`;
@@ -486,7 +477,11 @@
 
   function clearChat(){
     chatEl.innerHTML = "";
-    addMsg("bot","Nexo","¡Hola! Mi nombre es Nexo, soy tu asistente de conocimiento de Metrored. Puedes escribirme tus consultas y siempre responderé con fuentes oficiales si están disponibles. ¡Estoy aquí para apoyarte!");
+    addMsg("bot","Nexo","Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.", scopeLabelPretty(getScope()));
+  }
+
+  function scopeLabelPretty(scope){
+    return scope === "internal" ? "SGC" : "Aseguradoras";
   }
 
   function openConfig(){
@@ -498,6 +493,7 @@
   function closeConfig(){
     document.getElementById("modalBackdrop").style.display = "none";
   }
+
   async function testConnection(){
     const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
     const gate = (document.getElementById("cfgGate").value || "").trim();
@@ -518,6 +514,7 @@
       el.innerHTML = `<span class="err">ERROR</span> · ${escapeHtml(e.message || String(e))}`;
     }
   }
+
   function saveConfig(){
     const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
     const gate = (document.getElementById("cfgGate").value || "").trim();
@@ -536,7 +533,6 @@
   }
 
   function refreshStatus(){
-    const worker = getWorkerUrl();
     const gate = getGateKey();
     if(!gate){
       setStatus(false, "Falta Gate Key");
@@ -551,7 +547,10 @@
       send();
     }
   }
-  function quick(text){
+
+  // ✅ quick ahora puede forzar scope
+  function quick(text, scope){
+    if(scope) setScope(scope);
     document.getElementById("q").value = text;
     send();
   }
@@ -572,7 +571,11 @@
       return;
     }
 
-    addMsg("me","Tú",question);
+    // UI: disable send mientras consulta
+    const sendBtn = document.getElementById("sendBtn");
+    if(sendBtn) sendBtn.disabled = true;
+
+    addMsg("me","Tú",question, scopeLabelPretty(scope));
     q.value = "";
 
     try{
@@ -584,23 +587,27 @@
         },
         body: JSON.stringify({ question, debug, scope })
       });
+
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
-      addMsg("bot","Nexo", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status));
-      return;
+        addMsg("bot","Nexo", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status), "Error");
+        return;
+      }
+
+      addBotHtml("Nexo", j.answer || "Sin respuesta", j.sources || [], scopeLabelPretty(scope));
+    }catch(e){
+      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error");
+    }finally{
+      if(sendBtn) sendBtn.disabled = false;
     }
-    addBotHtml("Nexo", j.answer || "Sin respuesta", j.sources || []);
-  }catch(e){
-    addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)));
-  }
   }
 
   // Init
+  refreshScopeUI();
   clearChat();
   refreshStatus();
-  refreshScopeUI();
+
   if(!getGateKey()){
-    // Force config on first run
     setTimeout(openConfig, 250);
   }
 </script>

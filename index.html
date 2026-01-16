@@ -5,6 +5,10 @@
   <title>Nexo | Metrored</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="favicon.ico" />
+
+  <!-- ✅ MSAL (Entra ID) -->
+  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/dist/msal-browser.min.js"></script>
+
   <style>
     :root{
       --bg:#f5f7fb;
@@ -344,11 +348,11 @@
     .toggle.on .knob{ transform:translateX(18px); }
   </style>
 </head>
+
 <body>
 <header>
   <div class="brand">
     <div class="nexo-logo" aria-label="Nexo" title="Nexo">
-      <!-- ✅ Logo: archivo correcto -->
       <img src="nexo-logo.png" alt="Nexo" />
     </div>
     <div class="title">
@@ -362,15 +366,19 @@
   </div>
 
   <div class="actions">
-    <div class="chip" id="statusChip" title="Estado de conexión">
+    <div class="chip" id="statusChip" title="Estado de sesión">
       <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
-      <span id="statusText">No configurado</span>
+      <span id="statusText">No autenticado</span>
     </div>
     <div class="microHint" id="modeHint" title="Modo actual">
       <span>⚙️</span>
       <span id="modeHintText">Modo local</span>
     </div>
-    <button class="btn ghost" onclick="openConfig()">Configurar acceso</button>
+
+    <button class="btn" id="loginBtn" onclick="login()">Iniciar sesión</button>
+    <button class="btn ghost" id="logoutBtn" onclick="logout()" style="display:none">Cerrar sesión</button>
+
+    <button class="btn ghost" onclick="openConfig()">Configurar worker</button>
   </div>
 </header>
 
@@ -384,7 +392,6 @@
         </div>
       </div>
 
-      <!-- ✅ Banner honesto -->
       <div class="banner" id="aiBanner">
         <div>
           <strong>IA no disponible.</strong>
@@ -453,6 +460,9 @@
           <b>Qué no hace:</b> no inventa procesos ni reemplaza instructivos oficiales.<br><br>
           <b>Fuentes:</b> siempre que sea posible, muestra enlaces al documento exacto.
         </div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+        <div class="small" id="whoami" style="opacity:.9"></div>
       </div>
     </aside>
   </div>
@@ -462,7 +472,7 @@
   </footer>
 </main>
 
-<!-- Config Modal -->
+<!-- Config Modal (solo Worker URL) -->
 <div class="modalBackdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modalHd">
@@ -471,25 +481,20 @@
     </div>
     <div class="modalBd">
       <div class="small">
-        Para proteger Metrored, este front <b>no incluye</b> el Gate Key dentro del código. Se guardará en <b>session</b> (se borra al cerrar el navegador).
+        Este front ya no usa <b>Gate Key</b>. El acceso se controla con <b>Entra ID</b>.
       </div>
+
       <div class="row" style="margin-top:14px">
-        <div>
+        <div style="grid-column: 1 / -1;">
           <label>Worker URL</label>
           <input id="cfgWorker" placeholder="https://TU-WORKER.workers.dev" />
           <div class="small" style="margin-top:6px">Se guarda en <b>este dispositivo</b>.</div>
-        </div>
-        <div>
-          <label>Gate Key (APP_GATE_KEY)</label>
-          <input id="cfgGate" placeholder="Pega aquí el Gate Key" type="password" />
-          <div class="small warn" style="margin-top:6px">No lo pegues en chats ni lo envíes por correo.</div>
         </div>
       </div>
 
       <div style="margin-top:12px">
         <label>Opciones avanzadas</label>
 
-        <!-- ✅ Toggle IA (reemplaza emergencia) -->
         <div class="toggleRow">
           <div class="toggleText">
             <div class="toggleTitle">Modo IA</div>
@@ -521,19 +526,88 @@
 </div>
 
 <script>
-  // Storage policy:
-  // - worker URL: localStorage
-  // - gate key: sessionStorage
-  // - scope: localStorage
-  // - ai_mode: localStorage
+  // ======================
+  // ENTRA ID (MSAL) - Metrored
+  // ======================
+  const ENTRA_TENANT_ID = "480bd49c-6f89-4faa-b39e-c7728d95d130";
+  const ENTRA_CLIENT_ID = "7bcef56f-d3c5-4a94-a953-41f8c6b0fa54";
+  const ENTRA_SCOPE = "api://66130291-fc50-43f1-943c-6818dac1ba99/basedeconocimiento";
+
+  const msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId: ENTRA_CLIENT_ID,
+      authority: "https://login.microsoftonline.com/" + ENTRA_TENANT_ID,
+      redirectUri: window.location.origin + window.location.pathname,
+    },
+    cache: { cacheLocation: "sessionStorage" },
+  });
+
+  async function authInit(){
+    await msalInstance.initialize();
+    await msalInstance.handleRedirectPromise().catch(() => null);
+
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (acc) msalInstance.setActiveAccount(acc);
+
+    refreshAuthUI();
+  }
+
+  async function login(){
+    await msalInstance.loginRedirect({ scopes: [ENTRA_SCOPE] });
+  }
+
+  async function logout(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) {
+      refreshAuthUI();
+      return;
+    }
+    await msalInstance.logoutRedirect({ account: acc });
+  }
+
+  async function getAccessToken(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) throw new Error("NOT_LOGGED_IN");
+
+    try {
+      const r = await msalInstance.acquireTokenSilent({ scopes: [ENTRA_SCOPE], account: acc });
+      return r.accessToken;
+    } catch {
+      await msalInstance.acquireTokenRedirect({ scopes: [ENTRA_SCOPE] });
+      throw new Error("REDIRECTING");
+    }
+  }
+
+  function refreshAuthUI(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const who = document.getElementById("whoami");
+
+    if (acc){
+      if (loginBtn) loginBtn.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+      if (who) who.innerHTML = `<b>Sesión:</b> ${escapeHtml(acc.username || "usuario")}`;
+      setStatus(true, "Autenticado");
+    } else {
+      if (loginBtn) loginBtn.style.display = "inline-block";
+      if (logoutBtn) logoutBtn.style.display = "none";
+      if (who) who.innerHTML = `<b>Sesión:</b> no autenticado`;
+      setStatus(false, "No autenticado");
+    }
+  }
+
+  // ======================
+  // App storage (sin Gate Key)
+  // ======================
   const LS_WORKER = "nexo_worker_url";
-  const SS_GATE = "nexo_gate_key";
   const LS_SCOPE = "nexo_scope";
-  const LS_AI = "nexo_ai_mode"; // ✅ NUEVO
+  const LS_AI = "nexo_ai_mode";
 
   const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
   const DEFAULT_SCOPE = "insurance";
-  const DEFAULT_AI = "0"; // arranca local
+  const DEFAULT_AI = "0"; // local
 
   function getScope(){
     return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
@@ -616,16 +690,13 @@
   function getWorkerUrl(){
     return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
   }
-  function getGateKey(){
-    return sessionStorage.getItem(SS_GATE) || "";
-  }
+
   function setStatus(ok, text){
     document.getElementById("statusDot").style.background = ok ? "var(--ok)" : "var(--danger)";
     document.getElementById("statusText").textContent = text;
   }
 
   const chatEl = document.getElementById("chat");
-  // ✅ avatar del bot también usa nexo-logo
   const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
 
   function addMsg(role, who, text, metaTag, aiTag){
@@ -695,12 +766,9 @@
 
   function openConfig(){
     document.getElementById("cfgWorker").value = getWorkerUrl();
-    document.getElementById("cfgGate").value = getGateKey();
     document.getElementById("testResult").innerHTML = "";
-
     refreshAIUI();
     refreshHeaderBadges();
-
     document.getElementById("modalBackdrop").style.display = "flex";
   }
   function closeConfig(){
@@ -709,14 +777,10 @@
 
   async function testConnection(){
     const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
-    const gate = (document.getElementById("cfgGate").value || "").trim();
     const el = document.getElementById("testResult");
     el.innerHTML = "Probando…";
     try{
-      const r = await fetch(worker + "/health", {
-        method:"GET",
-        headers: gate ? { "Authorization":"Bearer " + gate } : {}
-      });
+      const r = await fetch(worker + "/health", { method:"GET" });
       const t = await r.text();
       if(r.ok){
         el.innerHTML = `<span class="ok">OK</span> · ${escapeHtml(t || "Conectado")}`;
@@ -730,33 +794,13 @@
 
   function saveConfig(){
     const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
-    const gate = (document.getElementById("cfgGate").value || "").trim();
-
     if(!worker){
       document.getElementById("testResult").innerHTML = `<span class="err">Falta Worker URL</span>`;
       return;
     }
-
     localStorage.setItem(LS_WORKER, worker);
-
-    if(gate){
-      sessionStorage.setItem(SS_GATE, gate);
-    }else{
-      sessionStorage.removeItem(SS_GATE);
-    }
-
     closeConfig();
-    refreshStatus();
     refreshHeaderBadges();
-  }
-
-  function refreshStatus(){
-    const gate = getGateKey();
-    if(!gate){
-      setStatus(false, "Falta Gate Key");
-      return;
-    }
-    setStatus(true, "Listo");
   }
 
   function handleKey(e){
@@ -775,7 +819,6 @@
   function aiTagFromMeta(ai_meta){
     if(!ai_meta) return getAI() ? "IA" : "Local";
     if(ai_meta.ai_used) return "IA";
-    // si pidió IA y no se pudo usar => etiqueta “Local (IA falló)”
     if(ai_meta.ai_mode_requested && !ai_meta.ai_used) return "Local (IA falló)";
     return getAI() ? "IA" : "Local";
   }
@@ -793,8 +836,6 @@
         "IA no disponible por un error. Puedes continuar en modo local.";
 
       showAiBanner(msg);
-
-      // si el worker sugiere local, apaga IA automáticamente (esto hace el front “honesto”)
       setAI(false);
     }
   }
@@ -807,18 +848,22 @@
     if(!question) return;
 
     const worker = getWorkerUrl();
-    const gate = getGateKey();
-
     const debugEl = document.getElementById("debugToggle");
     const debug = !!(debugEl && debugEl.checked);
 
     const scope = getScope();
     const ai_mode = getAI();
 
-    if(!gate){
-      openConfig();
-      document.getElementById("testResult").innerHTML = `<span class="warn">Configura el Gate Key para continuar.</span>`;
-      return;
+    // ✅ Requiere sesión Entra para llamar al worker
+    let token;
+    try{
+      token = await getAccessToken();
+    }catch(e){
+      if ((e.message || "") === "NOT_LOGGED_IN"){
+        await login();
+        return;
+      }
+      throw e;
     }
 
     const sendBtn = document.getElementById("sendBtn");
@@ -832,14 +877,18 @@
         method:"POST",
         headers:{
           "Content-Type":"application/json",
-          "Authorization":"Bearer " + gate
+          "Authorization":"Bearer " + token
         },
-        // ✅ Contract nuevo con el worker:
         body: JSON.stringify({ question, debug, scope, ai_mode })
       });
 
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
+        // si token inválido/expirado => re-login
+        if (r.status === 401){
+          showAiBanner("Sesión inválida/expirada. Vuelve a iniciar sesión.");
+          refreshAuthUI();
+        }
         addMsg(
           "bot",
           "Nexo",
@@ -871,7 +920,6 @@
   // Init
   refreshScopeUI();
 
-  // default AI off
   if(localStorage.getItem(LS_AI) == null){
     localStorage.setItem(LS_AI, DEFAULT_AI);
   }
@@ -879,9 +927,12 @@
   refreshAIUI();
   refreshHeaderBadges();
   clearChat();
-  refreshStatus();
 
-  if(!getGateKey()){
+  // ✅ Inicia auth al cargar
+  authInit().catch(()=>{});
+
+  // Abre config si no hay worker guardado
+  if(!localStorage.getItem(LS_WORKER)){
     setTimeout(openConfig, 250);
   }
 </script>

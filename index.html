@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="favicon.ico" />
 
-  <!-- ✅ MSAL (Entra ID) - CDN oficial -->
+  <!-- ✅ MSAL (Entra ID) - CDN oficial Microsoft -->
   <script src="https://alcdn.msauth.net/browser/3.0.0/js/msal-browser.min.js"></script>
 
   <style>
@@ -146,6 +146,7 @@
       background:linear-gradient(180deg, #fdfdff, #f5f7fb);
     }
 
+    /* ===== Banner “honesto” ===== */
     .banner{
       display:none;
       margin:12px 14px 0 14px;
@@ -262,6 +263,7 @@
     li{margin:6px 0}
     footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
 
+    /* Modal */
     .modalBackdrop{
       position:fixed; inset:0; background:rgba(0,0,0,.6);
       display:none; align-items:center; justify-content:center; z-index:50;
@@ -303,6 +305,7 @@
       100%{transform:scale(1.6); opacity:0}
     }
 
+    /* ===== Toggle corporativo (Modo IA) ===== */
     .toggleRow{
       margin-top:10px;
       display:flex;
@@ -342,11 +345,58 @@
       border-color:rgba(106,92,255,.35);
     }
     .toggle.on .knob{ transform:translateX(18px); }
+
+    /* ===== Login screen ===== */
+    .loginWrap{
+      height:calc(100vh - 72px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+    .loginCard{
+      width:min(920px, 100%);
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 920px){
+      .loginCard{grid-template-columns:1fr}
+    }
+    .loginPanel{
+      padding:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,247,251,.98));
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow: 0 20px 60px rgba(15,23,42,.12);
+    }
+    .loginHero{
+      border-radius:18px;
+      border:1px solid rgba(56,108,255,.18);
+      background:linear-gradient(135deg, rgba(56,108,255,.10), rgba(106,92,255,.12));
+      padding:18px;
+      box-shadow: 0 20px 60px rgba(15,23,42,.08);
+    }
+    .loginHero h2{margin:0 0 6px 0; font-size:22px; letter-spacing:.2px}
+    .loginHero p{margin:0; color:var(--muted); line-height:1.4; font-size:13px}
+    .loginPanel h3{margin:0 0 8px 0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
+    .loginPanel .big{
+      font-size:18px;
+      font-weight:900;
+      margin:0 0 10px 0;
+    }
+    .loginPanel .sub{color:var(--muted); font-size:12px; margin:0 0 14px 0; line-height:1.35}
+    .loginPanel .row2{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .loginPanel .tiny{margin-top:12px; font-size:12px; color:var(--muted); line-height:1.35}
+    .divider{height:1px; background:var(--border); margin:14px 0}
+
+    /* hide app until auth */
+    #appMain{display:none;}
   </style>
 </head>
 
 <body>
-<header>
+<header id="appHeader">
   <div class="brand">
     <div class="nexo-logo" aria-label="Nexo" title="Nexo">
       <img src="nexo-logo.png" alt="Nexo" />
@@ -362,29 +412,82 @@
   </div>
 
   <div class="actions">
+    <!-- User chip (enterprise) -->
+    <div class="chip" id="userChip" title="Usuario" style="display:none;">
+      <img id="userPhoto" alt="foto" style="width:22px;height:22px;border-radius:8px;display:none;border:1px solid var(--border);object-fit:cover;">
+      <span id="userInitials" style="width:22px;height:22px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--border);background:#fff;font-weight:900;font-size:11px;">U</span>
+
+      <span style="display:flex; flex-direction:column; line-height:1.1;">
+        <span id="userName" style="font-weight:900;">—</span>
+        <span id="userRole" style="font-weight:700; font-size:11px; color:var(--muted);">—</span>
+      </span>
+
+      <span class="badge" id="verifiedBadge" style="margin-left:6px;">Verificado</span>
+    </div>
+
     <div class="chip" id="statusChip" title="Estado de sesión">
       <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
       <span id="statusText">No autenticado</span>
     </div>
+
     <div class="microHint" id="modeHint" title="Modo actual">
       <span>⚙️</span>
       <span id="modeHintText">Modo local</span>
     </div>
 
-    <button class="btn" id="loginBtn" onclick="login()">Iniciar sesión</button>
-    <button class="btn ghost" id="logoutBtn" onclick="logout()" style="display:none">Cerrar sesión</button>
+    <!-- IMPORTANT: no onclick here (fix msal init race) -->
+    <button class="btn" id="loginBtn">Iniciar sesión</button>
+    <button class="btn ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
 
-    <button class="btn ghost" onclick="openConfig()">Configurar worker</button>
+    <button class="btn ghost" id="cfgBtn">Configurar worker</button>
   </div>
 </header>
 
-<main>
+<!-- ===== Login Screen ===== -->
+<div class="loginWrap" id="loginWrap">
+  <div class="loginCard">
+    <div class="loginHero">
+      <h2>Acceso seguro a Nexo</h2>
+      <p>
+        Inicia sesión con tu cuenta corporativa para consultar procedimientos, aseguradoras y políticas internas.
+        Nexo muestra evidencia y enlaces a documentos oficiales.
+      </p>
+      <div class="divider"></div>
+      <p style="margin-top:10px;">
+        🔒 Autenticación: <b>Microsoft Entra ID</b><br>
+        ✅ Trazabilidad: fuentes y enlaces<br>
+        ⚠️ Si falta evidencia, Nexo lo dirá explícitamente
+      </p>
+    </div>
+
+    <div class="loginPanel">
+      <h3>Ingreso</h3>
+      <p class="big">Autenticación requerida</p>
+      <p class="sub">Para continuar, inicia sesión. Después podrás configurar el Worker URL si aún no está guardado en este dispositivo.</p>
+
+      <div class="row2">
+        <button class="btn primary" id="loginBtn2">Iniciar sesión</button>
+        <button class="btn" id="openCfgBtn2">Configurar Worker</button>
+      </div>
+
+      <div class="tiny" id="loginMsg" style="margin-top:10px;"></div>
+
+      <div class="divider"></div>
+      <div class="tiny">
+        <b>Nota:</b> Si tu tenant no tiene consentimiento para <code>User.Read</code>,
+        igual podrás usar el chat, solo que el rol/foto podrían no aparecer.
+      </div>
+    </div>
+  </div>
+</div>
+
+<main id="appMain">
   <div class="grid">
     <section class="card stack">
       <div class="hd">
         <h2>Conversación</h2>
         <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn" onclick="clearChat()">Limpiar</button>
+          <button class="btn" id="clearBtn">Limpiar</button>
         </div>
       </div>
 
@@ -394,8 +497,8 @@
           <span id="aiBannerText">Se detectó un error (cuota / conexión). Puedes continuar en modo local.</span>
         </div>
         <div class="right">
-          <button class="mini" onclick="forceLocalMode()">Activar modo local</button>
-          <button class="mini secondary" onclick="hideAiBanner()">Ocultar</button>
+          <button class="mini" id="forceLocalBtn">Activar modo local</button>
+          <button class="mini secondary" id="hideAiBannerBtn">Ocultar</button>
         </div>
       </div>
 
@@ -403,8 +506,8 @@
 
       <div class="bd">
         <div class="inputRow">
-          <textarea id="q" placeholder="Escribe tu consulta… (Enter para enviar, Shift+Enter para salto de línea)" onkeydown="handleKey(event)"></textarea>
-          <button class="btn primary" id="sendBtn" onclick="send()">Enviar</button>
+          <textarea id="q" placeholder="Escribe tu consulta… (Enter para enviar, Shift+Enter para salto de línea)"></textarea>
+          <button class="btn primary" id="sendBtn">Enviar</button>
         </div>
         <div class="small" style="margin-top:10px">
           Nexo responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara.
@@ -419,8 +522,8 @@
       <div class="bd">
         <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Alcance de búsqueda</h3>
         <div class="pillRow">
-          <div class="pill" id="scopeInternal" onclick="setScope('internal')">Sistema de Gestión de la Calidad</div>
-          <div class="pill" id="scopeInsurance" onclick="setScope('insurance')">Procesos Aseguradoras</div>
+          <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
+          <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
         </div>
         <div class="small" id="scopeStatus" style="margin-top:8px">Buscando en: --</div>
 
@@ -428,10 +531,10 @@
 
         <div class="small">Atajos (configurados por tu equipo):</div>
         <div class="kpi" style="margin-top:12px">
-          <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?','internal')">Reembolso en caja</div>
-          <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?','internal')">Preparación colonoscopía</div>
-          <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general','insurance')">Copago Saludsa Masivos</div>
-          <div class="pill" onclick="quick('¿Qué políticas internas aplican para admisión de pacientes?','internal')">Política admisión</div>
+          <div class="pill primary" id="q1">Reembolso en caja</div>
+          <div class="pill" id="q2">Preparación colonoscopía</div>
+          <div class="pill" id="q3">Copago Saludsa Masivos</div>
+          <div class="pill" id="q4">Política admisión</div>
         </div>
 
         <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
@@ -468,11 +571,12 @@
   </footer>
 </main>
 
+<!-- Config Modal (solo Worker URL) -->
 <div class="modalBackdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modalHd">
       <h3>Configuración</h3>
-      <button class="btn ghost" onclick="closeConfig()">Cerrar</button>
+      <button class="btn ghost" id="closeCfgBtn">Cerrar</button>
     </div>
     <div class="modalBd">
       <div class="small">
@@ -497,7 +601,7 @@
               Intenta resumir evidencia con OpenAI. Si hay error (cuota/conexión), Nexo seguirá respondiendo en modo local y te lo mostrará.
             </div>
           </div>
-          <button class="toggle" id="aiToggle" type="button" aria-pressed="false" onclick="toggleAI()">
+          <button class="toggle" id="aiToggle" type="button" aria-pressed="false">
             <span class="knob"></span>
           </button>
         </div>
@@ -514,8 +618,8 @@
       </div>
     </div>
     <div class="modalFt">
-      <button class="btn" onclick="testConnection()">Probar conexión</button>
-      <button class="btn primary" onclick="saveConfig()">Guardar</button>
+      <button class="btn" id="testConnBtn">Probar conexión</button>
+      <button class="btn primary" id="saveCfgBtn">Guardar</button>
     </div>
   </div>
 </div>
@@ -537,77 +641,8 @@
     cache: { cacheLocation: "sessionStorage" },
   });
 
-  async function authInit(){
-    await msalInstance.initialize();
-
-    const response = await msalInstance.handleRedirectPromise().catch(() => null);
-    if (response && response.account) {
-      msalInstance.setActiveAccount(response.account);
-    } else {
-      const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-      if (acc) msalInstance.setActiveAccount(acc);
-    }
-
-    refreshAuthUI();
-  }
-
-  async function login(){
-    await msalInstance.loginRedirect({
-      scopes: [ENTRA_SCOPE],
-      prompt: "select_account"
-    });
-  }
-
-  async function logout(){
-    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-    if (!acc) {
-      refreshAuthUI();
-      return;
-    }
-    await msalInstance.logoutRedirect({ account: acc });
-  }
-
-  async function getAccessToken(){
-    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-    if (!acc) throw new Error("NOT_LOGGED_IN");
-
-    try {
-      const r = await msalInstance.acquireTokenSilent({
-        scopes: [ENTRA_SCOPE],
-        account: acc
-      });
-      return r.accessToken;
-    } catch (e) {
-      await msalInstance.acquireTokenRedirect({
-        scopes: [ENTRA_SCOPE],
-        account: acc
-      });
-      throw new Error("REDIRECTING");
-    }
-  }
-
-  function refreshAuthUI(){
-    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const who = document.getElementById("whoami");
-
-    if (acc){
-      if (loginBtn) loginBtn.style.display = "none";
-      if (logoutBtn) logoutBtn.style.display = "inline-block";
-      if (who) who.innerHTML = `<b>Sesión:</b> ${escapeHtml(acc.username || "usuario")}`;
-      setStatus(true, "Autenticado");
-    } else {
-      if (loginBtn) loginBtn.style.display = "inline-block";
-      if (logoutBtn) logoutBtn.style.display = "none";
-      if (who) who.innerHTML = `<b>Sesión:</b> no autenticado`;
-      setStatus(false, "No autenticado");
-    }
-  }
-
   // ======================
-  // App storage (sin Gate Key)
+  // App storage
   // ======================
   const LS_WORKER = "nexo_worker_url";
   const LS_SCOPE = "nexo_scope";
@@ -637,10 +672,27 @@
     setAI(!getAI());
   }
 
-  function forceLocalMode(){
-    setAI(false);
-    showAiBanner("Modo local activado. La IA queda apagada hasta que la vuelvas a encender.");
+  function getWorkerUrl(){
+    return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
   }
+
+  // ======================
+  // UI helpers
+  // ======================
+  const chatEl = document.getElementById("chat");
+  const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
+
+  function escapeHtml(s){
+    return String(s || "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function setStatus(ok, text){
+    document.getElementById("statusDot").style.background = ok ? "var(--ok)" : "var(--danger)";
+    document.getElementById("statusText").textContent = text;
+  }
+
   function showAiBanner(msg){
     const b = document.getElementById("aiBanner");
     const t = document.getElementById("aiBannerText");
@@ -650,6 +702,15 @@
   function hideAiBanner(){
     const b = document.getElementById("aiBanner");
     if(b) b.style.display = "none";
+  }
+
+  function forceLocalMode(){
+    setAI(false);
+    showAiBanner("Modo local activado. La IA queda apagada hasta que la vuelvas a encender.");
+  }
+
+  function scopeLabelPretty(scope){
+    return scope === "internal" ? "SGC" : "Aseguradoras";
   }
 
   function refreshScopeUI(){
@@ -695,18 +756,6 @@
     }
   }
 
-  function getWorkerUrl(){
-    return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
-  }
-
-  function setStatus(ok, text){
-    document.getElementById("statusDot").style.background = ok ? "var(--ok)" : "var(--danger)";
-    document.getElementById("statusText").textContent = text;
-  }
-
-  const chatEl = document.getElementById("chat");
-  const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
-
   function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
@@ -751,12 +800,6 @@
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function escapeHtml(s){
-    return String(s || "")
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  }
-
   function clearChat(){
     chatEl.innerHTML = "";
     addMsg(
@@ -768,10 +811,9 @@
     );
   }
 
-  function scopeLabelPretty(scope){
-    return scope === "internal" ? "SGC" : "Aseguradoras";
-  }
-
+  // ======================
+  // Config modal
+  // ======================
   function openConfig(){
     document.getElementById("cfgWorker").value = getWorkerUrl();
     document.getElementById("testResult").innerHTML = "";
@@ -811,19 +853,235 @@
     refreshHeaderBadges();
   }
 
-  function handleKey(e){
-    if(e.key === "Enter" && !e.shiftKey){
-      e.preventDefault();
-      send();
+  // ======================
+  // Entra helpers (user panel: name + role/area + photo)
+  // ======================
+  function safeInitials(nameOrEmail){
+    const s = String(nameOrEmail || "").trim();
+    if (!s) return "U";
+    const parts = s.split(/[\s.@_-]+/).filter(Boolean);
+    const a = (parts[0] || "U")[0] || "U";
+    const b = (parts[1] || "")[0] || "";
+    return (a + b).toUpperCase();
+  }
+
+  function getTokenClaims(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    return (acc && acc.idTokenClaims) ? acc.idTokenClaims : null;
+  }
+
+  function setUserUI({ name, email, tenantId, photoUrl, roleLine }){
+    const userChip = document.getElementById("userChip");
+    const userNameEl = document.getElementById("userName");
+    const roleEl = document.getElementById("userRole");
+    const initialsEl = document.getElementById("userInitials");
+    const photoEl = document.getElementById("userPhoto");
+    const verifiedEl = document.getElementById("verifiedBadge");
+
+    const display = name || email || "Usuario";
+    if (userNameEl) userNameEl.textContent = display;
+    if (roleEl) roleEl.textContent = roleLine || "—";
+
+    const initials = safeInitials(display);
+    if (initialsEl) initialsEl.textContent = initials;
+
+    if (verifiedEl){
+      const shortTenant = tenantId ? String(tenantId).slice(0, 6) + "…" : "";
+      verifiedEl.textContent = shortTenant ? `Verificado · ${shortTenant}` : "Verificado";
+    }
+
+    if (photoEl){
+      if (photoUrl){
+        photoEl.src = photoUrl;
+        photoEl.style.display = "block";
+        if (initialsEl) initialsEl.style.display = "none";
+      } else {
+        photoEl.style.display = "none";
+        if (initialsEl) initialsEl.style.display = "grid";
+      }
+    }
+
+    if (userChip) userChip.style.display = "flex";
+  }
+
+  async function tryLoadProfilePhoto(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) return null;
+
+    let token;
+    try{
+      const r = await msalInstance.acquireTokenSilent({ scopes:["User.Read"], account: acc });
+      token = r.accessToken;
+    }catch{
+      return null;
+    }
+
+    try{
+      const resp = await fetch("https://graph.microsoft.com/v1.0/me/photo/$value", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!resp.ok) return null;
+      const blob = await resp.blob();
+      return URL.createObjectURL(blob);
+    }catch{
+      return null;
     }
   }
 
-  function quick(text, scope){
-    if(scope) setScope(scope);
-    document.getElementById("q").value = text;
-    send();
+  async function tryLoadRoleArea(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) return null;
+
+    let token;
+    try{
+      const r = await msalInstance.acquireTokenSilent({ scopes:["User.Read"], account: acc });
+      token = r.accessToken;
+    }catch{
+      return null;
+    }
+
+    try{
+      const resp = await fetch("https://graph.microsoft.com/v1.0/me?$select=jobTitle,department,companyName,officeLocation", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!resp.ok) return null;
+
+      const me = await resp.json().catch(()=>null);
+      if (!me) return null;
+
+      const jobTitle = (me.jobTitle || "").trim();
+      const department = (me.department || "").trim();
+      const company = (me.companyName || "").trim();
+      const office = (me.officeLocation || "").trim();
+
+      const parts = [];
+      if (jobTitle) parts.push(jobTitle);
+      if (department) parts.push(department);
+      if (!parts.length && company) parts.push(company);
+      if (!parts.length && office) parts.push(office);
+
+      const roleLine = parts.join(" · ").trim();
+      return roleLine || null;
+    }catch{
+      return null;
+    }
   }
 
+  async function refreshUserProfileUI(){
+    const claims = getTokenClaims() || {};
+    const name =
+      claims.name ||
+      claims.given_name ||
+      claims.preferred_username ||
+      claims.unique_name ||
+      "";
+
+    const email =
+      claims.preferred_username ||
+      claims.upn ||
+      "";
+
+    const tenantId =
+      claims.tid || ENTRA_TENANT_ID;
+
+    setUserUI({ name, email, tenantId, photoUrl: null, roleLine: null });
+
+    const photoUrl = await tryLoadProfilePhoto();
+    if (photoUrl){
+      setUserUI({ name, email, tenantId, photoUrl, roleLine: (document.getElementById("userRole")?.textContent || null) });
+    }
+
+    const roleLine = await tryLoadRoleArea();
+    if (roleLine){
+      setUserUI({ name, email, tenantId, photoUrl: photoUrl || null, roleLine });
+    }
+  }
+
+  // ======================
+  // Auth UI + screens
+  // ======================
+  function showLogin(){
+    document.getElementById("loginWrap").style.display = "flex";
+    document.getElementById("appMain").style.display = "none";
+    document.getElementById("loginBtn").style.display = "inline-block";
+    document.getElementById("logoutBtn").style.display = "none";
+    document.getElementById("whoami").innerHTML = `<b>Sesión:</b> no autenticado`;
+    document.getElementById("userChip").style.display = "none";
+  }
+
+  function showApp(){
+    document.getElementById("loginWrap").style.display = "none";
+    document.getElementById("appMain").style.display = "flex";
+    document.getElementById("loginBtn").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "inline-block";
+  }
+
+  function refreshAuthUI(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+
+    if (acc){
+      document.getElementById("whoami").innerHTML = `<b>Sesión:</b> ${escapeHtml(acc.username || "usuario")}`;
+      setStatus(true, "Autenticado");
+      showApp();
+      refreshUserProfileUI().catch(()=>{});
+    } else {
+      setStatus(false, "No autenticado");
+      showLogin();
+    }
+  }
+
+  async function authInit(){
+    await msalInstance.initialize();
+
+    const response = await msalInstance.handleRedirectPromise().catch(() => null);
+    if (response && response.account) {
+      msalInstance.setActiveAccount(response.account);
+    } else {
+      const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+      if (acc) msalInstance.setActiveAccount(acc);
+    }
+
+    refreshAuthUI();
+  }
+
+  async function login(){
+    await msalInstance.loginRedirect({
+      scopes: [ENTRA_SCOPE, "User.Read"],
+      prompt: "select_account"
+    });
+  }
+
+  async function logout(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) {
+      refreshAuthUI();
+      return;
+    }
+    await msalInstance.logoutRedirect({ account: acc });
+  }
+
+  async function getAccessToken(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) throw new Error("NOT_LOGGED_IN");
+
+    try {
+      const r = await msalInstance.acquireTokenSilent({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
+      return r.accessToken;
+    } catch {
+      await msalInstance.acquireTokenRedirect({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
+      throw new Error("REDIRECTING");
+    }
+  }
+
+  // ======================
+  // Chat
+  // ======================
   function aiTagFromMeta(ai_meta){
     if(!ai_meta) return getAI() ? "IA" : "Local";
     if(ai_meta.ai_used) return "IA";
@@ -866,15 +1124,10 @@
     try{
       token = await getAccessToken();
     }catch(e){
-      const msg = (e && e.message) ? e.message : String(e);
-      if (msg === "NOT_LOGGED_IN"){
+      if ((e.message || "") === "NOT_LOGGED_IN"){
         await login();
         return;
       }
-      if (msg === "REDIRECTING"){
-        return;
-      }
-      addMsg("bot","Nexo","Error de autenticación: " + msg, "Auth", "Local");
       return;
     }
 
@@ -928,19 +1181,68 @@
     }
   }
 
+  function handleKey(e){
+    if(e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  }
+
+  function quick(text, scope){
+    if(scope) setScope(scope);
+    document.getElementById("q").value = text;
+    send();
+  }
+
+  // ======================
+  // Wire events (NO inline onclick)
+  // ======================
+  function wireEvents(){
+    document.getElementById("loginBtn").addEventListener("click", login);
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("cfgBtn").addEventListener("click", openConfig);
+
+    document.getElementById("loginBtn2").addEventListener("click", login);
+    document.getElementById("openCfgBtn2").addEventListener("click", openConfig);
+
+    document.getElementById("closeCfgBtn").addEventListener("click", closeConfig);
+    document.getElementById("testConnBtn").addEventListener("click", testConnection);
+    document.getElementById("saveCfgBtn").addEventListener("click", saveConfig);
+
+    document.getElementById("aiToggle").addEventListener("click", toggleAI);
+
+    document.getElementById("clearBtn").addEventListener("click", clearChat);
+    document.getElementById("forceLocalBtn").addEventListener("click", forceLocalMode);
+    document.getElementById("hideAiBannerBtn").addEventListener("click", hideAiBanner);
+
+    document.getElementById("sendBtn").addEventListener("click", send);
+    document.getElementById("q").addEventListener("keydown", handleKey);
+
+    document.getElementById("scopeInternal").addEventListener("click", ()=>setScope("internal"));
+    document.getElementById("scopeInsurance").addEventListener("click", ()=>setScope("insurance"));
+
+    document.getElementById("q1").addEventListener("click", ()=>quick("¿Cuál es el procedimiento para realizar un reembolso en caja?","internal"));
+    document.getElementById("q2").addEventListener("click", ()=>quick("¿Cómo debe venir preparado un paciente para una colonoscopía?","internal"));
+    document.getElementById("q3").addEventListener("click", ()=>quick("Copago Saludsa Masivos para consulta de medicina general","insurance"));
+    document.getElementById("q4").addEventListener("click", ()=>quick("¿Qué políticas internas aplican para admisión de pacientes?","internal"));
+  }
+
+  // ======================
   // Init
+  // ======================
+  wireEvents();
   refreshScopeUI();
 
   if(localStorage.getItem(LS_AI) == null){
     localStorage.setItem(LS_AI, DEFAULT_AI);
   }
-
   refreshAIUI();
   refreshHeaderBadges();
   clearChat();
 
   authInit().catch(()=>{});
 
+  // Abre config si no hay worker guardado
   if(!localStorage.getItem(LS_WORKER)){
     setTimeout(openConfig, 250);
   }

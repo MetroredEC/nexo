@@ -78,7 +78,6 @@
     .btn.ghost{background:transparent; box-shadow:none;}
     .btn:disabled{opacity:.55; cursor:not-allowed}
 
-    /* ===== Extras corporativos ===== */
     .badge{
       font-size:11px;
       padding:4px 8px;
@@ -89,10 +88,10 @@
       font-weight:900;
       letter-spacing:.2px;
     }
-    .badge.emergency{
-      border-color: rgba(246,178,107,.55);
-      background: rgba(246,178,107,.22);
-      color:#8a5a20;
+    .badge.ai{
+      border-color: rgba(106,92,255,.35);
+      background: rgba(106,92,255,.10);
+      color:#5a4cff;
     }
     .badge.hidden{display:none;}
     .microHint{
@@ -142,6 +141,40 @@
       flex:1; min-height:0; overflow:auto; padding:18px;
       background:linear-gradient(180deg, #fdfdff, #f5f7fb);
     }
+
+    /* ===== Banner “honesto” ===== */
+    .banner{
+      display:none;
+      margin:12px 14px 0 14px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(246,178,107,.45);
+      background: rgba(246,178,107,.18);
+      color:#8a5a20;
+      font-size:12px;
+      box-shadow:0 6px 16px rgba(15,23,42,.05);
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .banner strong{font-weight:900}
+    .banner .right{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    .banner .mini{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(246,178,107,.55);
+      background:#fff;
+      cursor:pointer;
+      font-weight:900;
+      color:#8a5a20;
+      box-shadow:none;
+      font-size:12px;
+    }
+    .banner .mini.secondary{
+      border-color:rgba(226,232,240,1);
+      color:var(--muted);
+    }
+
     .msg{margin:0 0 16px 0; display:flex; gap:10px; align-items:flex-start;}
     .msg.me{justify-content:flex-end;}
     .avatar{
@@ -168,10 +201,10 @@
       color:#2f57d6;
       font-weight:800;
     }
-    .meta .tag.emergency{
-      border-color: rgba(246,178,107,.55);
-      background: rgba(246,178,107,.22);
-      color:#8a5a20;
+    .meta .tag.ai{
+      border-color: rgba(106,92,255,.3);
+      background: rgba(106,92,255,.10);
+      color:#5a4cff;
     }
     .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
     .me .avatar{background:rgba(56,108,255,.14); border-color:rgba(56,108,255,.35)}
@@ -269,7 +302,7 @@
       100%{transform:scale(1.6); opacity:0}
     }
 
-    /* ===== Toggle corporativo (modo emergencia) ===== */
+    /* ===== Toggle corporativo (Modo IA) ===== */
     .toggleRow{
       margin-top:10px;
       display:flex;
@@ -305,8 +338,8 @@
       box-shadow:0 6px 14px rgba(15,23,42,.12);
     }
     .toggle.on{
-      background:rgba(246,178,107,.28);
-      border-color:rgba(246,178,107,.45);
+      background:rgba(106,92,255,.18);
+      border-color:rgba(106,92,255,.35);
     }
     .toggle.on .knob{ transform:translateX(18px); }
   </style>
@@ -315,13 +348,14 @@
 <header>
   <div class="brand">
     <div class="nexo-logo" aria-label="Nexo" title="Nexo">
-      <img src="avatar.png" alt="Nexo" />
+      <!-- ✅ Logo: archivo correcto -->
+      <img src="nexo-logo.png" alt="Nexo" />
     </div>
     <div class="title">
       <h1>
         Nexo
         <span class="badge" id="scopeBadge">—</span>
-        <span class="badge emergency hidden" id="emergencyBadge">Emergencia</span>
+        <span class="badge ai hidden" id="aiBadge">IA</span>
       </h1>
       <span>Asistente Inteligente de Conocimiento Metrored</span>
     </div>
@@ -334,7 +368,7 @@
     </div>
     <div class="microHint" id="modeHint" title="Modo actual">
       <span>⚙️</span>
-      <span id="modeHintText">Modo normal</span>
+      <span id="modeHintText">Modo local</span>
     </div>
     <button class="btn ghost" onclick="openConfig()">Configurar acceso</button>
   </div>
@@ -347,6 +381,18 @@
         <h2>Conversación</h2>
         <div style="display:flex; gap:10px; align-items:center;">
           <button class="btn" onclick="clearChat()">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- ✅ Banner honesto -->
+      <div class="banner" id="aiBanner">
+        <div>
+          <strong>IA no disponible.</strong>
+          <span id="aiBannerText">Se detectó un error (cuota / conexión). Puedes continuar en modo local.</span>
+        </div>
+        <div class="right">
+          <button class="mini" onclick="forceLocalMode()">Activar modo local</button>
+          <button class="mini secondary" onclick="hideAiBanner()">Ocultar</button>
         </div>
       </div>
 
@@ -443,12 +489,15 @@
       <div style="margin-top:12px">
         <label>Opciones avanzadas</label>
 
+        <!-- ✅ Toggle IA (reemplaza emergencia) -->
         <div class="toggleRow">
           <div class="toggleText">
-            <div class="toggleTitle">Modo emergencia</div>
-            <div class="toggleDesc">Aumenta la búsqueda/recall cuando “no encuentra”. Puede tardar más.</div>
+            <div class="toggleTitle">Modo IA</div>
+            <div class="toggleDesc">
+              Intenta resumir evidencia con OpenAI. Si hay error (cuota/conexión), Nexo seguirá respondiendo en modo local y te lo mostrará.
+            </div>
           </div>
-          <button class="toggle" id="emergencyToggle" type="button" aria-pressed="false" onclick="toggleEmergency()">
+          <button class="toggle" id="aiToggle" type="button" aria-pressed="false" onclick="toggleAI()">
             <span class="knob"></span>
           </button>
         </div>
@@ -473,15 +522,18 @@
 
 <script>
   // Storage policy:
-  // - worker URL: localStorage (ok)
-  // - gate key: sessionStorage (clears on browser close)
+  // - worker URL: localStorage
+  // - gate key: sessionStorage
+  // - scope: localStorage
+  // - ai_mode: localStorage
   const LS_WORKER = "nexo_worker_url";
   const SS_GATE = "nexo_gate_key";
   const LS_SCOPE = "nexo_scope";
-  const LS_EMERGENCY = "nexo_emergency"; // ✅ NUEVO
+  const LS_AI = "nexo_ai_mode"; // ✅ NUEVO
 
   const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
-  const DEFAULT_SCOPE = "insurance"; // ✅ arranca en aseguradoras
+  const DEFAULT_SCOPE = "insurance";
+  const DEFAULT_AI = "0"; // arranca local
 
   function getScope(){
     return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
@@ -491,18 +543,31 @@
     refreshScopeUI();
   }
 
-  // ✅ FIX CRITICO:
-  // Guardar emergencia como "1"/"0" (no "true"/"false") y leerlo igual.
-  function getEmergency(){
-    return localStorage.getItem(LS_EMERGENCY) === "1";
+  function getAI(){
+    return localStorage.getItem(LS_AI) === "1";
   }
-  function setEmergency(v){
-    localStorage.setItem(LS_EMERGENCY, v ? "1" : "0");
-    refreshEmergencyUI();
+  function setAI(v){
+    localStorage.setItem(LS_AI, v ? "1" : "0");
+    refreshAIUI();
     refreshHeaderBadges();
   }
-  function toggleEmergency(){
-    setEmergency(!getEmergency());
+  function toggleAI(){
+    setAI(!getAI());
+  }
+
+  function forceLocalMode(){
+    setAI(false);
+    showAiBanner("Modo local activado. La IA queda apagada hasta que la vuelvas a encender.");
+  }
+  function showAiBanner(msg){
+    const b = document.getElementById("aiBanner");
+    const t = document.getElementById("aiBannerText");
+    if(t) t.textContent = msg || "IA no disponible. Puedes continuar en modo local.";
+    if(b) b.style.display = "flex";
+  }
+  function hideAiBanner(){
+    const b = document.getElementById("aiBanner");
+    if(b) b.style.display = "none";
   }
 
   function refreshScopeUI(){
@@ -521,30 +586,30 @@
     refreshHeaderBadges();
   }
 
-  function refreshEmergencyUI(){
-    const btn = document.getElementById("emergencyToggle");
+  function refreshAIUI(){
+    const btn = document.getElementById("aiToggle");
     if(!btn) return;
-    const on = getEmergency();
+    const on = getAI();
     btn.classList.toggle("on", on);
     btn.setAttribute("aria-pressed", String(on));
   }
 
   function refreshHeaderBadges(){
     const scope = getScope();
-    const emergency = getEmergency();
+    const ai = getAI();
 
     const scopeBadge = document.getElementById("scopeBadge");
-    const emergencyBadge = document.getElementById("emergencyBadge");
+    const aiBadge = document.getElementById("aiBadge");
     const modeHintText = document.getElementById("modeHintText");
 
     if(scopeBadge){
       scopeBadge.textContent = scope === "internal" ? "SGC" : "Aseguradoras";
     }
-    if(emergencyBadge){
-      emergencyBadge.classList.toggle("hidden", !emergency);
+    if(aiBadge){
+      aiBadge.classList.toggle("hidden", !ai);
     }
     if(modeHintText){
-      modeHintText.textContent = emergency ? "Modo emergencia activado" : "Modo normal";
+      modeHintText.textContent = ai ? "Modo IA activado" : "Modo local";
     }
   }
 
@@ -560,9 +625,10 @@
   }
 
   const chatEl = document.getElementById("chat");
-  const botAvatarHtml = `<img src="avatar.png" alt="Nexo" />`;
+  // ✅ avatar del bot también usa nexo-logo
+  const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
 
-  function addMsg(role, who, text, metaTag, emergency){
+  function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
     const avatar = role === "me"
@@ -570,12 +636,12 @@
       : `<div class="avatar bot">${botAvatarHtml}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-    const emHtml = emergency ? `<span class="tag emergency">Emergencia</span>` : "";
+    const aiHtml = aiTag ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
     div.innerHTML = `
       ${avatar}
       <div class="bubble">
-        <div class="meta">${escapeHtml(who)} ${tagHtml} ${emHtml}</div>
+        <div class="meta">${escapeHtml(who)} ${tagHtml} ${aiHtml}</div>
         <p></p>
       </div>`;
     div.querySelector("p").textContent = text;
@@ -583,7 +649,7 @@
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function addBotHtml(title, answer, sources, metaTag, emergency){
+  function addBotHtml(title, answer, sources, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg bot";
     const srcHtml = (sources && sources.length)
@@ -593,12 +659,12 @@
          </div>`
       : "";
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-    const emHtml = emergency ? `<span class="tag emergency">Emergencia</span>` : "";
+    const aiHtml = aiTag ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
     div.innerHTML = `
       <div class="avatar bot">${botAvatarHtml}</div>
       <div class="bubble">
-        <div class="meta">${escapeHtml(title)} ${tagHtml} ${emHtml}</div>
+        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
         <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
         ${srcHtml}
       </div>`;
@@ -619,7 +685,7 @@
       "Nexo",
       "Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.",
       scopeLabelPretty(getScope()),
-      getEmergency()
+      getAI() ? "IA" : "Local"
     );
   }
 
@@ -632,8 +698,7 @@
     document.getElementById("cfgGate").value = getGateKey();
     document.getElementById("testResult").innerHTML = "";
 
-    // ✅ IMPORTANTE: sincroniza el toggle con localStorage al abrir el modal
-    refreshEmergencyUI();
+    refreshAIUI();
     refreshHeaderBadges();
 
     document.getElementById("modalBackdrop").style.display = "flex";
@@ -680,8 +745,6 @@
       sessionStorage.removeItem(SS_GATE);
     }
 
-    // ✅ NO LEAS emergency desde DOM en send()
-    // Aquí no hace falta “guardar” porque el toggle ya escribe en localStorage con setEmergency().
     closeConfig();
     refreshStatus();
     refreshHeaderBadges();
@@ -709,7 +772,36 @@
     send();
   }
 
+  function aiTagFromMeta(ai_meta){
+    if(!ai_meta) return getAI() ? "IA" : "Local";
+    if(ai_meta.ai_used) return "IA";
+    // si pidió IA y no se pudo usar => etiqueta “Local (IA falló)”
+    if(ai_meta.ai_mode_requested && !ai_meta.ai_used) return "Local (IA falló)";
+    return getAI() ? "IA" : "Local";
+  }
+
+  function maybeHandleAiMeta(ai_meta){
+    if(!ai_meta) return;
+
+    if(ai_meta.ai_mode_requested && !ai_meta.ai_used && ai_meta.suggestion === "SWITCH_TO_LOCAL"){
+      const code = ai_meta.ai_error_code || "UNKNOWN";
+      const msg =
+        code === "QUOTA_EXCEEDED" ? "IA no disponible por cuota (OpenAI 429). Te conviene activar modo local." :
+        code === "AUTH_ERROR" ? "IA no disponible por autorización (OpenAI 401). Activa modo local o revisa la key." :
+        code === "CONNECTION_ERROR" ? "IA no disponible por conexión/timeout. Puedes continuar en modo local." :
+        code === "AI_DISABLED" ? "IA apagada o sin API key en el worker. Puedes continuar en modo local." :
+        "IA no disponible por un error. Puedes continuar en modo local.";
+
+      showAiBanner(msg);
+
+      // si el worker sugiere local, apaga IA automáticamente (esto hace el front “honesto”)
+      setAI(false);
+    }
+  }
+
   async function send(){
+    hideAiBanner();
+
     const q = document.getElementById("q");
     const question = (q.value || "").trim();
     if(!question) return;
@@ -717,15 +809,11 @@
     const worker = getWorkerUrl();
     const gate = getGateKey();
 
-    // ✅ null-safe: si el modal no está abierto, igual existe el checkbox (está en DOM),
-    // pero mantenemos esto robusto por si alguien edita el HTML.
     const debugEl = document.getElementById("debugToggle");
     const debug = !!(debugEl && debugEl.checked);
 
     const scope = getScope();
-
-    // ✅ FIX CLAVE: emergency SIEMPRE viene de localStorage (fuente de verdad)
-    const emergency = getEmergency();
+    const ai_mode = getAI();
 
     if(!gate){
       openConfig();
@@ -736,7 +824,7 @@
     const sendBtn = document.getElementById("sendBtn");
     if(sendBtn) sendBtn.disabled = true;
 
-    addMsg("me","Tú",question, scopeLabelPretty(scope), emergency);
+    addMsg("me","Tú",question, scopeLabelPretty(scope), ai_mode ? "IA" : "Local");
     q.value = "";
 
     try{
@@ -746,7 +834,8 @@
           "Content-Type":"application/json",
           "Authorization":"Bearer " + gate
         },
-        body: JSON.stringify({ question, debug, scope, emergency })
+        // ✅ Contract nuevo con el worker:
+        body: JSON.stringify({ question, debug, scope, ai_mode })
       });
 
       const j = await r.json().catch(()=> ({}));
@@ -756,14 +845,24 @@
           "Nexo",
           (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status),
           "Error",
-          emergency
+          "Local"
         );
         return;
       }
 
-      addBotHtml("Nexo", j.answer || "Sin respuesta", j.sources || [], scopeLabelPretty(scope), emergency);
+      maybeHandleAiMeta(j.ai_meta);
+
+      addBotHtml(
+        "Nexo",
+        j.answer || "Sin respuesta",
+        j.sources || [],
+        scopeLabelPretty(scope),
+        aiTagFromMeta(j.ai_meta)
+      );
     }catch(e){
-      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", emergency);
+      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
+      showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");
+      setAI(false);
     }finally{
       if(sendBtn) sendBtn.disabled = false;
     }
@@ -772,12 +871,12 @@
   // Init
   refreshScopeUI();
 
-  // ✅ fuerza valor por defecto si no existe (modo normal)
-  if(localStorage.getItem(LS_EMERGENCY) == null){
-    localStorage.setItem(LS_EMERGENCY, "0");
+  // default AI off
+  if(localStorage.getItem(LS_AI) == null){
+    localStorage.setItem(LS_AI, DEFAULT_AI);
   }
 
-  refreshEmergencyUI();
+  refreshAIUI();
   refreshHeaderBadges();
   clearChat();
   refreshStatus();

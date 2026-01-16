@@ -48,12 +48,11 @@
       border:1px solid rgba(56,108,255,.2);
       overflow:hidden;
     }
-    /* ✅ Avatar oficial por PNG (coloca avatar.png junto al index.html) */
     .nexo-logo img{width:100%; height:100%; object-fit:cover}
     .title{display:flex; flex-direction:column; line-height:1.1}
-    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px}
+    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px; display:flex; gap:8px; align-items:center;}
     .title span{font-size:12px; color:var(--muted)}
-    .actions{display:flex; gap:10px; align-items:center;}
+    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
     .chip{
       font-size:12px; padding:6px 10px; border-radius:999px;
       border:1px solid var(--border); color:var(--muted);
@@ -78,6 +77,34 @@
     .btn.primary{background:var(--brand); color:#fff; border-color:transparent;}
     .btn.ghost{background:transparent; box-shadow:none;}
     .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    /* ===== Extras corporativos ===== */
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(56,108,255,.25);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .badge.emergency{
+      border-color: rgba(246,178,107,.55);
+      background: rgba(246,178,107,.22);
+      color:#8a5a20;
+    }
+    .badge.hidden{display:none;}
+    .microHint{
+      font-size:12px; color:var(--muted);
+      padding:8px 10px;
+      border:1px dashed rgba(56,108,255,.25);
+      background:rgba(255,255,255,.6);
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(15,23,42,.05);
+      display:flex; gap:8px; align-items:center;
+    }
+
     main{
       max-width:1280px;
       margin:0 auto;
@@ -125,7 +152,6 @@
       flex:0 0 auto;
       overflow:hidden;
     }
-    /* ✅ Avatar en chat por PNG */
     .avatar.bot img{width:100%; height:100%; object-fit:cover}
     .bubble{
       max-width:70%;
@@ -134,13 +160,18 @@
       padding:10px 12px;
       background:#fff;
     }
-    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center}
+    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .meta .tag{
       font-size:11px; padding:3px 8px; border-radius:999px;
       border:1px solid rgba(56,108,255,.2);
       background:rgba(56,108,255,.08);
       color:#2f57d6;
       font-weight:800;
+    }
+    .meta .tag.emergency{
+      border-color: rgba(246,178,107,.55);
+      background: rgba(246,178,107,.22);
+      color:#8a5a20;
     }
     .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
     .me .avatar{background:rgba(56,108,255,.14); border-color:rgba(56,108,255,.35)}
@@ -161,7 +192,7 @@
     .small{font-size:12px; color:var(--muted); line-height:1.35}
     .kpi{display:flex; flex-wrap:wrap; gap:8px}
     .pill{
-      font-size:12px; padding:10px 12px; border-radius:999px; /* ✅ más grande */
+      font-size:12px; padding:10px 12px; border-radius:999px;
       border:1px solid var(--border);
       background:#fff;
       cursor:pointer;
@@ -237,17 +268,61 @@
       0%{transform:scale(.7); opacity:.8}
       100%{transform:scale(1.6); opacity:0}
     }
+
+    /* ===== Toggle corporativo (modo emergencia) ===== */
+    .toggleRow{
+      margin-top:10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(15,23,42,.06);
+    }
+    .toggleText{flex:1}
+    .toggleTitle{font-weight:900; font-size:13px; margin-bottom:4px;}
+    .toggleDesc{font-size:12px; color:var(--muted); line-height:1.35;}
+    .toggle{
+      width:44px; height:26px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(31,41,55,.08);
+      position:relative;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .toggle .knob{
+      width:20px; height:20px;
+      border-radius:50%;
+      background:#fff;
+      border:1px solid var(--border);
+      position:absolute;
+      top:2px; left:2px;
+      transition:transform .16s ease;
+      box-shadow:0 6px 14px rgba(15,23,42,.12);
+    }
+    .toggle.on{
+      background:rgba(246,178,107,.28);
+      border-color:rgba(246,178,107,.45);
+    }
+    .toggle.on .knob{ transform:translateX(18px); }
   </style>
 </head>
 <body>
 <header>
   <div class="brand">
     <div class="nexo-logo" aria-label="Nexo" title="Nexo">
-      <!-- ✅ Pon aquí tu imagen oficial -->
       <img src="avatar.png" alt="Nexo" />
     </div>
     <div class="title">
-      <h1>Nexo</h1>
+      <h1>
+        Nexo
+        <span class="badge" id="scopeBadge">—</span>
+        <span class="badge emergency hidden" id="emergencyBadge">Emergencia</span>
+      </h1>
       <span>Asistente Inteligente de Conocimiento Metrored</span>
     </div>
   </div>
@@ -256,6 +331,10 @@
     <div class="chip" id="statusChip" title="Estado de conexión">
       <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
       <span id="statusText">No configurado</span>
+    </div>
+    <div class="microHint" id="modeHint" title="Modo actual">
+      <span>⚙️</span>
+      <span id="modeHintText">Modo normal</span>
     </div>
     <button class="btn ghost" onclick="openConfig()">Configurar acceso</button>
   </div>
@@ -300,7 +379,6 @@
 
         <div class="small">Atajos (configurados por tu equipo):</div>
         <div class="kpi" style="margin-top:12px">
-          <!-- ✅ Estos atajos también fuerzan scope para evitar confusión -->
           <div class="pill primary" onclick="quick('¿Cuál es el procedimiento para realizar un reembolso en caja?','internal')">Reembolso en caja</div>
           <div class="pill" onclick="quick('¿Cómo debe venir preparado un paciente para una colonoscopía?','internal')">Preparación colonoscopía</div>
           <div class="pill" onclick="quick('Copago Saludsa Masivos para consulta de medicina general','insurance')">Copago Saludsa Masivos</div>
@@ -361,9 +439,21 @@
           <div class="small warn" style="margin-top:6px">No lo pegues en chats ni lo envíes por correo.</div>
         </div>
       </div>
+
       <div style="margin-top:12px">
         <label>Opciones avanzadas</label>
-        <label style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); font-weight:800; margin:0;">
+
+        <div class="toggleRow">
+          <div class="toggleText">
+            <div class="toggleTitle">Modo emergencia</div>
+            <div class="toggleDesc">Aumenta la búsqueda/recall cuando “no encuentra”. Puede tardar más.</div>
+          </div>
+          <button class="toggle" id="emergencyToggle" type="button" aria-pressed="false" onclick="toggleEmergency()">
+            <span class="knob"></span>
+          </button>
+        </div>
+
+        <label style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); font-weight:800; margin:10px 0 0;">
           <input type="checkbox" id="debugToggle" style="width:16px; height:16px; margin:0;" />
           Modo debug
         </label>
@@ -388,6 +478,7 @@
   const LS_WORKER = "nexo_worker_url";
   const SS_GATE = "nexo_gate_key";
   const LS_SCOPE = "nexo_scope";
+  const LS_EMERGENCY = "nexo_emergency"; // ✅ NUEVO
 
   const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
   const DEFAULT_SCOPE = "insurance"; // ✅ arranca en aseguradoras
@@ -399,6 +490,19 @@
     localStorage.setItem(LS_SCOPE, scope);
     refreshScopeUI();
   }
+
+  function getEmergency(){
+    return (localStorage.getItem(LS_EMERGENCY) || "false") === "true";
+  }
+  function setEmergency(v){
+    localStorage.setItem(LS_EMERGENCY, String(!!v));
+    refreshEmergencyUI();
+    refreshHeaderBadges();
+  }
+  function toggleEmergency(){
+    setEmergency(!getEmergency());
+  }
+
   function refreshScopeUI(){
     const scope = getScope();
     const internalBtn = document.getElementById("scopeInternal");
@@ -411,6 +515,35 @@
     scopeLabel.textContent = scope === "internal"
       ? "Buscando en: Sistema de Gestión de la Calidad"
       : "Buscando en: Procesos Aseguradoras";
+
+    refreshHeaderBadges();
+  }
+
+  function refreshEmergencyUI(){
+    const btn = document.getElementById("emergencyToggle");
+    if(!btn) return;
+    const on = getEmergency();
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", String(on));
+  }
+
+  function refreshHeaderBadges(){
+    const scope = getScope();
+    const emergency = getEmergency();
+
+    const scopeBadge = document.getElementById("scopeBadge");
+    const emergencyBadge = document.getElementById("emergencyBadge");
+    const modeHintText = document.getElementById("modeHintText");
+
+    if(scopeBadge){
+      scopeBadge.textContent = scope === "internal" ? "SGC" : "Aseguradoras";
+    }
+    if(emergencyBadge){
+      emergencyBadge.classList.toggle("hidden", !emergency);
+    }
+    if(modeHintText){
+      modeHintText.textContent = emergency ? "Modo emergencia activado" : "Modo normal";
+    }
   }
 
   function getWorkerUrl(){
@@ -427,7 +560,7 @@
   const chatEl = document.getElementById("chat");
   const botAvatarHtml = `<img src="avatar.png" alt="Nexo" />`;
 
-  function addMsg(role, who, text, metaTag){
+  function addMsg(role, who, text, metaTag, emergency){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
     const avatar = role === "me"
@@ -435,11 +568,12 @@
       : `<div class="avatar bot">${botAvatarHtml}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const emHtml = emergency ? `<span class="tag emergency">Emergencia</span>` : "";
 
     div.innerHTML = `
       ${avatar}
       <div class="bubble">
-        <div class="meta">${escapeHtml(who)} ${tagHtml}</div>
+        <div class="meta">${escapeHtml(who)} ${tagHtml} ${emHtml}</div>
         <p></p>
       </div>`;
     div.querySelector("p").textContent = text;
@@ -447,7 +581,7 @@
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function addBotHtml(title, answer, sources, metaTag){
+  function addBotHtml(title, answer, sources, metaTag, emergency){
     const div = document.createElement("div");
     div.className = "msg bot";
     const srcHtml = (sources && sources.length)
@@ -457,11 +591,12 @@
          </div>`
       : "";
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const emHtml = emergency ? `<span class="tag emergency">Emergencia</span>` : "";
 
     div.innerHTML = `
       <div class="avatar bot">${botAvatarHtml}</div>
       <div class="bubble">
-        <div class="meta">${escapeHtml(title)} ${tagHtml}</div>
+        <div class="meta">${escapeHtml(title)} ${tagHtml} ${emHtml}</div>
         <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
         ${srcHtml}
       </div>`;
@@ -477,7 +612,7 @@
 
   function clearChat(){
     chatEl.innerHTML = "";
-    addMsg("bot","Nexo","Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.", scopeLabelPretty(getScope()));
+    addMsg("bot","Nexo","Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.", scopeLabelPretty(getScope()), getEmergency());
   }
 
   function scopeLabelPretty(scope){
@@ -488,6 +623,8 @@
     document.getElementById("cfgWorker").value = getWorkerUrl();
     document.getElementById("cfgGate").value = getGateKey();
     document.getElementById("testResult").innerHTML = "";
+    refreshEmergencyUI();     // ✅
+    refreshHeaderBadges();    // ✅
     document.getElementById("modalBackdrop").style.display = "flex";
   }
   function closeConfig(){
@@ -530,6 +667,7 @@
     }
     closeConfig();
     refreshStatus();
+    refreshHeaderBadges();
   }
 
   function refreshStatus(){
@@ -548,7 +686,6 @@
     }
   }
 
-  // ✅ quick ahora puede forzar scope
   function quick(text, scope){
     if(scope) setScope(scope);
     document.getElementById("q").value = text;
@@ -564,6 +701,7 @@
     const gate = getGateKey();
     const debug = document.getElementById("debugToggle").checked;
     const scope = getScope();
+    const emergency = getEmergency(); // ✅ NUEVO
 
     if(!gate){
       openConfig();
@@ -571,11 +709,10 @@
       return;
     }
 
-    // UI: disable send mientras consulta
     const sendBtn = document.getElementById("sendBtn");
     if(sendBtn) sendBtn.disabled = true;
 
-    addMsg("me","Tú",question, scopeLabelPretty(scope));
+    addMsg("me","Tú",question, scopeLabelPretty(scope), emergency);
     q.value = "";
 
     try{
@@ -585,18 +722,19 @@
           "Content-Type":"application/json",
           "Authorization":"Bearer " + gate
         },
-        body: JSON.stringify({ question, debug, scope })
+        // ✅ manda emergency al worker
+        body: JSON.stringify({ question, debug, scope, emergency })
       });
 
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
-        addMsg("bot","Nexo", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status), "Error");
+        addMsg("bot","Nexo", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status), "Error", emergency);
         return;
       }
 
-      addBotHtml("Nexo", j.answer || "Sin respuesta", j.sources || [], scopeLabelPretty(scope));
+      addBotHtml("Nexo", j.answer || "Sin respuesta", j.sources || [], scopeLabelPretty(scope), emergency);
     }catch(e){
-      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error");
+      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", emergency);
     }finally{
       if(sendBtn) sendBtn.disabled = false;
     }
@@ -604,6 +742,8 @@
 
   // Init
   refreshScopeUI();
+  refreshEmergencyUI();
+  refreshHeaderBadges();
   clearChat();
   refreshStatus();
 

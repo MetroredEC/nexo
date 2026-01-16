@@ -491,11 +491,13 @@
     refreshScopeUI();
   }
 
+  // ✅ FIX CRITICO:
+  // Guardar emergencia como "1"/"0" (no "true"/"false") y leerlo igual.
   function getEmergency(){
-    return (localStorage.getItem(LS_EMERGENCY) || "false") === "true";
+    return localStorage.getItem(LS_EMERGENCY) === "1";
   }
   function setEmergency(v){
-    localStorage.setItem(LS_EMERGENCY, String(!!v));
+    localStorage.setItem(LS_EMERGENCY, v ? "1" : "0");
     refreshEmergencyUI();
     refreshHeaderBadges();
   }
@@ -612,7 +614,13 @@
 
   function clearChat(){
     chatEl.innerHTML = "";
-    addMsg("bot","Nexo","Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.", scopeLabelPretty(getScope()), getEmergency());
+    addMsg(
+      "bot",
+      "Nexo",
+      "Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.",
+      scopeLabelPretty(getScope()),
+      getEmergency()
+    );
   }
 
   function scopeLabelPretty(scope){
@@ -623,8 +631,11 @@
     document.getElementById("cfgWorker").value = getWorkerUrl();
     document.getElementById("cfgGate").value = getGateKey();
     document.getElementById("testResult").innerHTML = "";
-    refreshEmergencyUI();     // ✅
-    refreshHeaderBadges();    // ✅
+
+    // ✅ IMPORTANTE: sincroniza el toggle con localStorage al abrir el modal
+    refreshEmergencyUI();
+    refreshHeaderBadges();
+
     document.getElementById("modalBackdrop").style.display = "flex";
   }
   function closeConfig(){
@@ -655,16 +666,22 @@
   function saveConfig(){
     const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
     const gate = (document.getElementById("cfgGate").value || "").trim();
+
     if(!worker){
       document.getElementById("testResult").innerHTML = `<span class="err">Falta Worker URL</span>`;
       return;
     }
+
     localStorage.setItem(LS_WORKER, worker);
+
     if(gate){
       sessionStorage.setItem(SS_GATE, gate);
     }else{
       sessionStorage.removeItem(SS_GATE);
     }
+
+    // ✅ NO LEAS emergency desde DOM en send()
+    // Aquí no hace falta “guardar” porque el toggle ya escribe en localStorage con setEmergency().
     closeConfig();
     refreshStatus();
     refreshHeaderBadges();
@@ -699,9 +716,16 @@
 
     const worker = getWorkerUrl();
     const gate = getGateKey();
-    const debug = document.getElementById("debugToggle").checked;
+
+    // ✅ null-safe: si el modal no está abierto, igual existe el checkbox (está en DOM),
+    // pero mantenemos esto robusto por si alguien edita el HTML.
+    const debugEl = document.getElementById("debugToggle");
+    const debug = !!(debugEl && debugEl.checked);
+
     const scope = getScope();
-    const emergency = getEmergency(); // ✅ NUEVO
+
+    // ✅ FIX CLAVE: emergency SIEMPRE viene de localStorage (fuente de verdad)
+    const emergency = getEmergency();
 
     if(!gate){
       openConfig();
@@ -722,13 +746,18 @@
           "Content-Type":"application/json",
           "Authorization":"Bearer " + gate
         },
-        // ✅ manda emergency al worker
         body: JSON.stringify({ question, debug, scope, emergency })
       });
 
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
-        addMsg("bot","Nexo", (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status), "Error", emergency);
+        addMsg(
+          "bot",
+          "Nexo",
+          (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status),
+          "Error",
+          emergency
+        );
         return;
       }
 
@@ -742,6 +771,12 @@
 
   // Init
   refreshScopeUI();
+
+  // ✅ fuerza valor por defecto si no existe (modo normal)
+  if(localStorage.getItem(LS_EMERGENCY) == null){
+    localStorage.setItem(LS_EMERGENCY, "0");
+  }
+
   refreshEmergencyUI();
   refreshHeaderBadges();
   clearChat();

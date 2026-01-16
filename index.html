@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="favicon.ico" />
 
-  <!-- ✅ MSAL (Entra ID) -->
-  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/dist/msal-browser.min.js"></script>
+  <!-- ✅ MSAL (Entra ID) - CDN oficial -->
+  <script src="https://alcdn.msauth.net/browser/3.0.0/js/msal-browser.min.js"></script>
 
   <style>
     :root{
@@ -146,7 +146,6 @@
       background:linear-gradient(180deg, #fdfdff, #f5f7fb);
     }
 
-    /* ===== Banner “honesto” ===== */
     .banner{
       display:none;
       margin:12px 14px 0 14px;
@@ -263,7 +262,6 @@
     li{margin:6px 0}
     footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
 
-    /* Modal */
     .modalBackdrop{
       position:fixed; inset:0; background:rgba(0,0,0,.6);
       display:none; align-items:center; justify-content:center; z-index:50;
@@ -297,7 +295,6 @@
     }
     input:focus{border-color:rgba(56,108,255,.45)}
     .modalFt{padding:14px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px}
-    .warn{color:#ffd28a}
     .err{color:var(--danger)}
     .ok{color:var(--ok)}
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
@@ -306,7 +303,6 @@
       100%{transform:scale(1.6); opacity:0}
     }
 
-    /* ===== Toggle corporativo (Modo IA) ===== */
     .toggleRow{
       margin-top:10px;
       display:flex;
@@ -472,7 +468,6 @@
   </footer>
 </main>
 
-<!-- Config Modal (solo Worker URL) -->
 <div class="modalBackdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modalHd">
@@ -544,16 +539,23 @@
 
   async function authInit(){
     await msalInstance.initialize();
-    await msalInstance.handleRedirectPromise().catch(() => null);
 
-    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-    if (acc) msalInstance.setActiveAccount(acc);
+    const response = await msalInstance.handleRedirectPromise().catch(() => null);
+    if (response && response.account) {
+      msalInstance.setActiveAccount(response.account);
+    } else {
+      const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+      if (acc) msalInstance.setActiveAccount(acc);
+    }
 
     refreshAuthUI();
   }
 
   async function login(){
-    await msalInstance.loginRedirect({ scopes: [ENTRA_SCOPE] });
+    await msalInstance.loginRedirect({
+      scopes: [ENTRA_SCOPE],
+      prompt: "select_account"
+    });
   }
 
   async function logout(){
@@ -570,10 +572,16 @@
     if (!acc) throw new Error("NOT_LOGGED_IN");
 
     try {
-      const r = await msalInstance.acquireTokenSilent({ scopes: [ENTRA_SCOPE], account: acc });
+      const r = await msalInstance.acquireTokenSilent({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
       return r.accessToken;
-    } catch {
-      await msalInstance.acquireTokenRedirect({ scopes: [ENTRA_SCOPE] });
+    } catch (e) {
+      await msalInstance.acquireTokenRedirect({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
       throw new Error("REDIRECTING");
     }
   }
@@ -854,16 +862,20 @@
     const scope = getScope();
     const ai_mode = getAI();
 
-    // ✅ Requiere sesión Entra para llamar al worker
     let token;
     try{
       token = await getAccessToken();
     }catch(e){
-      if ((e.message || "") === "NOT_LOGGED_IN"){
+      const msg = (e && e.message) ? e.message : String(e);
+      if (msg === "NOT_LOGGED_IN"){
         await login();
         return;
       }
-      throw e;
+      if (msg === "REDIRECTING"){
+        return;
+      }
+      addMsg("bot","Nexo","Error de autenticación: " + msg, "Auth", "Local");
+      return;
     }
 
     const sendBtn = document.getElementById("sendBtn");
@@ -884,7 +896,6 @@
 
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
-        // si token inválido/expirado => re-login
         if (r.status === 401){
           showAiBanner("Sesión inválida/expirada. Vuelve a iniciar sesión.");
           refreshAuthUI();
@@ -928,10 +939,8 @@
   refreshHeaderBadges();
   clearChat();
 
-  // ✅ Inicia auth al cargar
   authInit().catch(()=>{});
 
-  // Abre config si no hay worker guardado
   if(!localStorage.getItem(LS_WORKER)){
     setTimeout(openConfig, 250);
   }

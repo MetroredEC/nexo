@@ -770,7 +770,16 @@
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
   }
+function stripSourcesFromAnswer(answer){
+  const s = String(answer || "");
 
+  // Corta todo lo que venga desde "Fuentes:" hacia abajo (case-insensitive)
+  const idx = s.search(/\n\s*fuentes\s*:/i);
+  if (idx >= 0) return s.slice(0, idx).trim();
+
+  return s.trim();
+}
+  
   function addBotHtml(title, answer, sources, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg bot";
@@ -1183,13 +1192,14 @@
 
       maybeHandleAiMeta(j.ai_meta);
 
-      addBotHtml(
-        "Nexo",
-        j.answer || "Sin respuesta",
-        j.sources || [],
-        scopeLabelPretty(scope),
-        aiTagFromMeta(j.ai_meta)
-      );
+const cleanAnswer = stripSourcesFromAnswer(j.answer || "");
+addBotHtml(
+  "Nexo",
+  cleanAnswer || "Sin respuesta",
+  j.sources || [],
+  scopeLabelPretty(scope),
+  aiTagFromMeta(j.ai_meta)
+);
     }catch(e){
       addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
       showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");

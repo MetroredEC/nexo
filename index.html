@@ -370,33 +370,138 @@
       padding:18px;
     }
     .loginCard{
-      width:min(920px, 100%);
+      width:min(1020px, 100%);
       display:grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap:14px;
+      grid-template-columns: 1.3fr 1fr;
+      gap:18px;
+      align-items:stretch;
     }
     @media (max-width: 920px){
       .loginCard{grid-template-columns:1fr}
     }
+    .loginShell{
+      padding:24px;
+      border-radius:22px;
+      border:1px solid rgba(56,108,255,.2);
+      background:
+        linear-gradient(135deg, rgba(56,108,255,.18), rgba(106,92,255,.08)),
+        radial-gradient(420px 280px at 20% 20%, rgba(255,255,255,.7), transparent 70%);
+      box-shadow: 0 24px 70px rgba(15,23,42,.14);
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .loginBrand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .loginBrandLogos{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .loginMetro{
+      width:58px;
+      height:58px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.65);
+      background:#fff;
+      display:grid;
+      place-items:center;
+      padding:6px;
+      box-shadow:0 12px 24px rgba(15,23,42,.12);
+    }
+    .loginMetro img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .loginBrand .nexo-logo{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      border:1px solid rgba(56,108,255,.25);
+      background:rgba(255,255,255,.8);
+    }
+    .loginBrand h2{
+      margin:0;
+      font-size:24px;
+      letter-spacing:.3px;
+    }
+    .loginBrand span{
+      display:block;
+      font-size:12px;
+      color:rgba(31,41,55,.75);
+      font-weight:700;
+    }
+    .loginHeroText{
+      font-size:14px;
+      color:#384152;
+      line-height:1.5;
+      margin:0;
+    }
+    .loginHeroTagline{
+      font-size:13px;
+      color:#1f2937;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .loginHighlights{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    .loginHighlight{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.6);
+      background:rgba(255,255,255,.7);
+      box-shadow:0 8px 18px rgba(15,23,42,.08);
+      font-size:12px;
+      color:#334155;
+      font-weight:700;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .loginHighlight span{
+      font-size:16px;
+    }
+    .loginStats{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .loginStat{
+      flex:1 1 140px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(56,108,255,.2);
+      background:rgba(255,255,255,.65);
+      font-size:12px;
+      color:#334155;
+      font-weight:700;
+    }
+    .loginStat strong{
+      display:block;
+      font-size:18px;
+      color:#1f2937;
+      margin-bottom:2px;
+    }
     .loginPanel{
-      padding:18px;
-      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,247,251,.98));
-      border:1px solid var(--border);
-      border-radius:18px;
-      box-shadow: 0 20px 60px rgba(15,23,42,.12);
+      padding:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,244,255,.95));
+      border:1px solid rgba(226,232,240,.9);
+      border-radius:22px;
+      box-shadow: 0 22px 60px rgba(15,23,42,.14);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
     }
-    .loginHero{
-      border-radius:18px;
-      border:1px solid rgba(56,108,255,.18);
-      background:linear-gradient(135deg, rgba(56,108,255,.10), rgba(106,92,255,.12));
-      padding:18px;
-      box-shadow: 0 20px 60px rgba(15,23,42,.08);
-    }
-    .loginHero h2{margin:0 0 6px 0; font-size:22px; letter-spacing:.2px}
-    .loginHero p{margin:0; color:var(--muted); line-height:1.4; font-size:13px}
     .loginPanel h3{margin:0 0 8px 0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
     .loginPanel .big{
-      font-size:18px;
+      font-size:20px;
       font-weight:900;
       margin:0 0 10px 0;
     }
@@ -404,6 +509,90 @@
     .loginPanel .row2{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
     .loginPanel .tiny{margin-top:12px; font-size:12px; color:var(--muted); line-height:1.35}
     .divider{height:1px; background:var(--border); margin:14px 0}
+    .loginAssurance{
+      display:grid;
+      gap:8px;
+      font-size:12px;
+      color:#475569;
+    }
+    .loginAssurance strong{
+      color:#1f2937;
+    }
+    .loginSteps{
+      border:1px solid rgba(226,232,240,.8);
+      background:#fff;
+      border-radius:16px;
+      padding:12px;
+      font-size:12px;
+      color:#475569;
+      line-height:1.45;
+    }
+    .loginSteps ol{
+      margin:0;
+      padding-left:18px;
+    }
+    .loginFootnote{
+      font-size:11px;
+      color:#64748b;
+    }
+
+    /* ===== Quick actions ===== */
+    .quickActions{
+      display:grid;
+      gap:14px;
+    }
+    .quickGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+    }
+    @media (max-width: 720px){
+      .quickGrid{grid-template-columns:1fr}
+    }
+    .quickBlock{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .quickBlock h4{
+      margin:0;
+      font-size:12px;
+      letter-spacing:.2px;
+      color:#475569;
+      text-transform:uppercase;
+      font-weight:900;
+    }
+    .quickHint{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .quickTools{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .quickBtn{
+      border-radius:12px;
+      border:1px solid rgba(56,108,255,.18);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:800;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .quickBtn.secondary{
+      background:rgba(106,92,255,.08);
+      border-color:rgba(106,92,255,.2);
+      color:#5a4cff;
+    }
+    .quickBtn:hover{
+      border-color:rgba(56,108,255,.45);
+    }
 
     /* hide app until auth */
     #appMain{display:none;}
@@ -458,36 +647,89 @@
 <!-- ===== Login Screen ===== -->
 <div class="loginWrap" id="loginWrap">
   <div class="loginCard">
-    <div class="loginHero">
-      <h2>Acceso seguro a Nexo</h2>
-      <p>
-        Inicia sesión con tu cuenta corporativa para consultar procedimientos, aseguradoras y políticas internas.
-        Nexo muestra evidencia y enlaces a documentos oficiales.
+    <div class="loginShell">
+      <div class="loginBrand">
+        <div class="loginBrandLogos">
+          <div class="loginMetro">
+            <img src="logo.png" alt="Metrored" />
+          </div>
+          <div class="nexo-logo" aria-hidden="true">
+            <img src="nexo-logo.png" alt="" />
+          </div>
+        </div>
+        <div>
+          <h2>Tu caja, más rápida</h2>
+          <span>Metrored · Experiencia en salud que te respalda</span>
+        </div>
+      </div>
+      <div class="loginHeroTagline">Una sola pantalla para resolver dudas y atender mejor.</div>
+      <p class="loginHeroText">
+        Resuelve consultas de coberturas, políticas y procesos en segundos mientras atiendes.
+        Todo con respuestas claras y fáciles de aplicar en ventanilla.
       </p>
-      <div class="divider"></div>
-      <p style="margin-top:10px;">
-        🔒 Autenticación: <b>Microsoft Entra ID</b><br>
-        ✅ Trazabilidad: fuentes y enlaces<br>
-        ⚠️ Si falta evidencia, Nexo lo dirá explícitamente
-      </p>
+      <div class="loginHighlights">
+        <div class="loginHighlight">
+          <span>💳</span>
+          <div>Guías rápidas para pagos, reembolsos y copagos.</div>
+        </div>
+        <div class="loginHighlight">
+          <span>📌</span>
+          <div>Respuestas directas para no dejar al paciente esperando.</div>
+        </div>
+        <div class="loginHighlight">
+          <span>📎</span>
+          <div>Siempre sabes dónde está el documento oficial.</div>
+        </div>
+        <div class="loginHighlight">
+          <span>✨</span>
+          <div>Interfaz simple y clara para tu trabajo diario.</div>
+        </div>
+      </div>
+      <div class="loginStats">
+        <div class="loginStat">
+          <strong>1 click</strong>
+          Accede y empieza a consultar.
+        </div>
+        <div class="loginStat">
+          <strong>+120</strong>
+          Documentos internos listos.
+        </div>
+        <div class="loginStat">
+          <strong>Sin vueltas</strong>
+          Encuentra la respuesta correcta.
+        </div>
+      </div>
     </div>
 
     <div class="loginPanel">
       <h3>Ingreso</h3>
-      <p class="big">Autenticación requerida</p>
-      <p class="sub">Para continuar, inicia sesión. Después podrás configurar el Worker URL si aún no está guardado en este dispositivo.</p>
+      <p class="big">Empieza tu turno en segundos</p>
+      <p class="sub">Ingresa con tu cuenta corporativa y accede al asistente de caja.</p>
 
       <div class="row2">
         <button class="btn primary" id="loginBtn2">Iniciar sesión</button>
         <button class="btn" id="openCfgBtn2">Configurar Worker</button>
       </div>
 
+      <div class="loginAssurance">
+        <div><strong>Acceso:</strong> tu cuenta corporativa de Metrored</div>
+        <div><strong>Confianza:</strong> respuestas con respaldo de documentos</div>
+        <div><strong>Soporte:</strong> dudas de caja, admisión y seguros</div>
+      </div>
+
       <div class="tiny" id="loginMsg" style="margin-top:10px;"></div>
 
       <div class="divider"></div>
-      <div class="tiny">
-        <b>Nota:</b> Si tu tenant no tiene consentimiento para <code>User.Read</code>,
-        igual podrás usar el chat, solo que el rol/foto podrían no aparecer.
+      <div class="loginSteps">
+        <strong>Checklist rápido</strong>
+        <ol>
+          <li>Inicia sesión con tu cuenta Metrored.</li>
+          <li>Escribe tu pregunta tal como la harías al supervisor.</li>
+          <li>Revisa la fuente si necesitas confirmación.</li>
+        </ol>
+      </div>
+      <div class="loginFootnote">
+        Si esta es tu primera vez en este equipo, configura el Worker URL antes de empezar.
       </div>
     </div>
   </div>
@@ -520,29 +762,45 @@
         <details class="disclosure" style="margin-bottom:12px;">
           <summary>Acciones rápidas</summary>
 
-          <div style="margin-top:10px;">
-            <div class="small" style="margin-bottom:8px;">
-              <b>Alcance de búsqueda</b>
+          <div class="quickActions" style="margin-top:10px;">
+            <div class="quickGrid">
+              <div class="quickBlock">
+                <h4>Alcance de búsqueda</h4>
+                <div class="quickTools">
+                  <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
+                  <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
+                </div>
+                <div class="quickHint" id="scopeStatus">Buscando en: --</div>
+              </div>
+
+              <div class="quickBlock">
+                <h4>Consultas críticas</h4>
+                <div class="quickTools">
+                  <button class="quickBtn" id="q1" type="button">Reembolso en caja</button>
+                  <button class="quickBtn" id="q4" type="button">Política admisión</button>
+                </div>
+                <div class="quickHint">Prioriza procesos con alto flujo de pacientes.</div>
+              </div>
+
+              <div class="quickBlock">
+                <h4>Preparación clínica</h4>
+                <div class="quickTools">
+                  <button class="quickBtn secondary" id="q2" type="button">Preparación colonoscopía</button>
+                  <button class="quickBtn secondary" id="q3" type="button">Copago Saludsa Masivos</button>
+                </div>
+                <div class="quickHint">Accesos rápidos a indicaciones y coberturas.</div>
+              </div>
+
+              <div class="quickBlock">
+                <h4>Buenas prácticas</h4>
+                <div class="quickHint">
+                  ✅ Valida vigencia del documento y confirma fechas de actualización.
+                </div>
+                <div class="quickHint">
+                  🔎 Usa palabras clave clínicas y nombres de aseguradora para mayor precisión.
+                </div>
+              </div>
             </div>
-            <div class="pillRow">
-              <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
-              <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
-            </div>
-            <div class="small" id="scopeStatus" style="margin-top:8px">Buscando en: --</div>
-          </div>
-
-          <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
-
-          <div class="small"><b>Atajos</b></div>
-          <div class="kpi" style="margin-top:12px">
-            <div class="pill primary" id="q1">Reembolso en caja</div>
-            <div class="pill" id="q2">Preparación colonoscopía</div>
-            <div class="pill" id="q3">Copago Saludsa Masivos</div>
-            <div class="pill" id="q4">Política admisión</div>
-          </div>
-
-          <div class="hint" style="margin-top:12px;">
-            ✅ Tip útil: si necesitas exactitud, abre la fuente y valida “vigencia”/fecha del documento.
           </div>
         </details>
 

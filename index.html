@@ -648,6 +648,7 @@
 
     <button class="btn" id="loginBtn">Iniciar sesión</button>
     <button class="btn ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
+    <button class="btn" id="prefsBtn" style="display:none">Personalizar</button>
     <button class="btn ghost" id="cfgBtn">Configurar worker</button>
   </div>
 </header>
@@ -731,21 +732,9 @@
               </div>
 
               <div class="quickBlock">
-                <h4>Consultas críticas</h4>
-                <div class="quickTools">
-                  <button class="quickBtn" id="q1" type="button">Reembolso en caja</button>
-                  <button class="quickBtn" id="q4" type="button">Política admisión</button>
-                </div>
-                <div class="quickHint">Prioriza procesos con alto flujo de pacientes.</div>
-              </div>
-
-              <div class="quickBlock">
-                <h4>Preparación clínica</h4>
-                <div class="quickTools">
-                  <button class="quickBtn secondary" id="q2" type="button">Preparación colonoscopía</button>
-                  <button class="quickBtn secondary" id="q3" type="button">Copago Saludsa Masivos</button>
-                </div>
-                <div class="quickHint">Accesos rápidos a indicaciones y coberturas.</div>
+                <h4>Acciones rápidas (tu usuario)</h4>
+                <div class="quickTools" id="userQuickActions"></div>
+                <div class="quickHint">Click = pega el texto en el chat (lo puedes editar antes de enviar).</div>
               </div>
 
               <div class="quickBlock">
@@ -833,6 +822,76 @@
   </div>
 </div>
 
+<!-- Preferences Modal (Quick Actions + Avatar Builder) -->
+<div class="modalBackdrop" id="prefsBackdrop" style="display:none;">
+  <div class="modal">
+    <div class="modalHd">
+      <h3>Personalización</h3>
+      <button class="btn ghost" id="closePrefsBtn">Cerrar</button>
+    </div>
+
+    <div class="modalBd">
+      <div class="row">
+        <div style="grid-column:1 / -1;">
+          <label>Acciones rápidas (por usuario)</label>
+          <div class="small">Se guardan en KV. Si inicias sesión en otra PC, salen igual.</div>
+          <div id="qaList" style="margin-top:10px; display:grid; gap:10px;"></div>
+          <button class="btn" id="qaAddBtn" type="button" style="margin-top:10px;">+ Agregar acción</button>
+        </div>
+
+        <div style="grid-column:1 / -1; margin-top:16px;">
+          <label>Avatar (estilo Nexo)</label>
+          <div class="small">Elige cara, ojos, boca y color. Sin texto ni iniciales.</div>
+
+          <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+            <div id="avatarPreview" style="width:56px;height:56px;"></div>
+
+            <div style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0, 1fr)); width:min(520px, 100%);">
+              <div>
+                <label>Forma de cara</label>
+                <select id="avFace" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="rounded">Rounded</option>
+                  <option value="oval">Oval</option>
+                  <option value="square">Square</option>
+                </select>
+              </div>
+              <div>
+                <label>Ojos</label>
+                <select id="avEyes" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="calm">Calm</option>
+                  <option value="happy">Happy</option>
+                  <option value="focused">Focused</option>
+                </select>
+              </div>
+              <div>
+                <label>Boca</label>
+                <select id="avMouth" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="smile">Smile</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="grin">Grin</option>
+                </select>
+              </div>
+              <div>
+                <label>Color</label>
+                <input id="avColor" type="color" value="#5b6bff" style="width:100%; height:46px; padding:6px 10px;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="grid-column:1 / -1; margin-top:10px;">
+          <div class="small" id="prefsStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalFt">
+      <button class="btn" id="prefsReloadBtn" type="button">Recargar</button>
+      <button class="btn primary" id="prefsSaveBtn" type="button">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ======================
   // ENTRA ID (MSAL) - Metrored
@@ -890,6 +949,22 @@
   // ======================
   const chatEl = document.getElementById("chat");
   const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
+
+  // ======================
+  // Preferences (KV via worker)
+  // ======================
+  let USER_PREFS = null; // se llena con /me/preferences
+  const PREFS_DEFAULT = {
+    version: 1,
+    quickActions: [
+      { id: "qa_reembolso", label: "Reembolso en caja", text: "¿Cuál es el procedimiento para realizar un reembolso en caja?", scope: "internal" },
+      { id: "qa_colono", label: "Preparación colonoscopía", text: "¿Cómo debe venir preparado un paciente para una colonoscopía?", scope: "internal" },
+      { id: "qa_copago", label: "Copago Saludsa Masivos", text: "Copago Saludsa Masivos para consulta de medicina general", scope: "insurance" },
+      { id: "qa_admision", label: "Política admisión", text: "¿Qué políticas internas aplican para admisión de pacientes?", scope: "internal" }
+    ],
+    avatar: { face: "rounded", eyes: "calm", mouth: "smile", color: "#5b6bff" },
+    updatedAt: null,
+  };
 
   function escapeHtml(s){
     return String(s || "")
@@ -965,11 +1040,81 @@
     }
   }
 
+  // ======================
+  // Avatar builder (SVG)
+  // ======================
+  function clampHexColor(c){
+    const s = String(c || "").trim();
+    return /^#([0-9a-fA-F]{6})$/.test(s) ? s : "#5b6bff";
+  }
+
+  function avatarSvg(avatar){
+    const a = avatar || PREFS_DEFAULT.avatar;
+    const face = a.face || "rounded";
+    const eyes = a.eyes || "calm";
+    const mouth = a.mouth || "smile";
+    const color = clampHexColor(a.color);
+
+    // Face shape
+    const facePath =
+      face === "oval" ? "M32 10c12 0 18 10 18 22s-6 22-18 22S14 44 14 32 20 10 32 10z" :
+      face === "square" ? "M18 14h28a8 8 0 0 1 8 8v20a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V22a8 8 0 0 1 8-8z" :
+      /* rounded */      "M32 10c12.5 0 22 8.5 22 22S44.5 54 32 54 10 45.5 10 32 19.5 10 32 10z";
+
+    // Eyes
+    const eyeL = { x: 23, y: 30 };
+    const eyeR = { x: 41, y: 30 };
+
+    const eyesSvg =
+      eyes === "happy" ?
+        `<path d="M18 30c2 2 4 3 6 3s4-1 6-3" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M34 30c2 2 4 3 6 3s4-1 6-3" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      eyes === "focused" ?
+        `<circle cx="${eyeL.x}" cy="${eyeL.y}" r="2.2" fill="#0f172a"/>
+         <circle cx="${eyeR.x}" cy="${eyeR.y}" r="2.2" fill="#0f172a"/>
+         <path d="M17 26h12" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M35 26h12" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      /* calm */
+        `<circle cx="${eyeL.x}" cy="${eyeL.y}" r="2.2" fill="#0f172a"/>
+         <circle cx="${eyeR.x}" cy="${eyeR.y}" r="2.2" fill="#0f172a"/>`;
+
+    // Mouth
+    const mouthSvg =
+      mouth === "neutral" ?
+        `<path d="M24 42h16" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      mouth === "grin" ?
+        `<path d="M24 40c2 4 6 6 8 6s6-2 8-6" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M26 42h12" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" opacity=".35"/>` :
+      /* smile */
+        `<path d="M24 40c2 4 6 6 8 6s6-2 8-6" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>`;
+
+    return `
+      <svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="avatar">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${color}" stop-opacity=".35"/>
+            <stop offset="1" stop-color="${color}" stop-opacity=".12"/>
+          </linearGradient>
+        </defs>
+        <path d="${facePath}" fill="url(#g)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>
+        <path d="${facePath}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" opacity=".35"/>
+        ${eyesSvg}
+        ${mouthSvg}
+        <circle cx="20" cy="38" r="2.6" fill="${color}" opacity=".18"/>
+        <circle cx="44" cy="38" r="2.6" fill="${color}" opacity=".18"/>
+      </svg>
+    `.trim();
+  }
+
+  function currentAvatar(){
+    return (USER_PREFS && USER_PREFS.avatar) ? USER_PREFS.avatar : PREFS_DEFAULT.avatar;
+  }
+
   function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
     const avatar = role === "me"
-      ? `<div class="avatar">Tú</div>`
+      ? `<div class="avatar user">${avatarSvg(currentAvatar())}</div>`
       : `<div class="avatar bot">${botAvatarHtml}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
@@ -1245,6 +1390,7 @@ function stripSourcesFromAnswer(answer){
     document.getElementById("appHeader").style.display = "none";
     document.getElementById("loginBtn").style.display = "inline-block";
     document.getElementById("logoutBtn").style.display = "none";
+    document.getElementById("prefsBtn").style.display = "none";
     document.getElementById("whoami").innerHTML = `<b>Sesión:</b> no autenticado`;
     document.getElementById("userChip").style.display = "none";
   }
@@ -1255,6 +1401,7 @@ function stripSourcesFromAnswer(answer){
     document.getElementById("appHeader").style.display = "flex";
     document.getElementById("loginBtn").style.display = "none";
     document.getElementById("logoutBtn").style.display = "inline-block";
+    document.getElementById("prefsBtn").style.display = "inline-block";
   }
 
   function refreshAuthUI(){
@@ -1265,6 +1412,9 @@ function stripSourcesFromAnswer(answer){
       setStatus(true, "Autenticado");
       showApp();
       refreshUserProfileUI().catch(()=>{});
+
+      // ✅ cargar preferencias por usuario (KV)
+      loadPreferences().catch(()=>{});
 
       // ✅ refresca saludo con nombre cuando ya hay sesión
       clearChat();
@@ -1321,6 +1471,241 @@ function stripSourcesFromAnswer(answer){
       });
       throw new Error("REDIRECTING");
     }
+  }
+
+  // ======================
+  // Preferences (KV via worker)
+  // ======================
+  async function prefsFetch(path, opts = {}){
+    const worker = getWorkerUrl();
+    const token = await getAccessToken();
+    const r = await fetch(worker + path, {
+      ...opts,
+      headers: {
+        ...(opts.headers || {}),
+        "Authorization": "Bearer " + token,
+      },
+    });
+    return r;
+  }
+
+  function openPrefs(){
+    document.getElementById("prefsBackdrop").style.display = "flex";
+    document.getElementById("prefsStatus").textContent = "";
+    renderPrefsModal();
+  }
+
+  function closePrefs(){
+    document.getElementById("prefsBackdrop").style.display = "none";
+  }
+
+  function applyAvatarToHeader(){
+    const userChip = document.getElementById("userChip");
+    if (!userChip) return;
+
+    let holder = document.getElementById("userAvatar");
+    if (!holder){
+      holder = document.createElement("div");
+      holder.id = "userAvatar";
+      holder.style.width = "22px";
+      holder.style.height = "22px";
+      holder.style.borderRadius = "8px";
+      holder.style.overflow = "hidden";
+      holder.style.display = "grid";
+      holder.style.placeItems = "center";
+      holder.style.border = "1px solid var(--border)";
+      holder.style.background = "#fff";
+      userChip.insertBefore(holder, userChip.firstChild);
+    }
+    holder.innerHTML = avatarSvg(currentAvatar());
+
+    const photoEl = document.getElementById("userPhoto");
+    const initialsEl = document.getElementById("userInitials");
+    if (photoEl) photoEl.style.display = "none";
+    if (initialsEl) initialsEl.style.display = "none";
+  }
+
+  function renderUserQuickActions(){
+    const wrap = document.getElementById("userQuickActions");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+
+    const list = (USER_PREFS && Array.isArray(USER_PREFS.quickActions)) ? USER_PREFS.quickActions : [];
+    if (!list.length){
+      const b = document.createElement("button");
+      b.className = "quickBtn";
+      b.type = "button";
+      b.textContent = "Personalizar…";
+      b.addEventListener("click", openPrefs);
+      wrap.appendChild(b);
+      return;
+    }
+
+    for (const qa of list){
+      const b = document.createElement("button");
+      b.className = "quickBtn";
+      if (qa.scope === "insurance") b.classList.add("secondary");
+      b.type = "button";
+      b.textContent = qa.label || "Acción";
+      b.addEventListener("click", () => quick(qa.text || "", qa.scope || null));
+      wrap.appendChild(b);
+    }
+  }
+
+  async function loadPreferences(){
+    try{
+      const r = await prefsFetch("/me/preferences", { method: "GET" });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || !j.ok) throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
+      USER_PREFS = j.prefs || PREFS_DEFAULT;
+    }catch(e){
+      // si falla, seguimos con defaults (no bloquea el chat)
+      USER_PREFS = USER_PREFS || PREFS_DEFAULT;
+      console.log("prefs load failed:", e);
+    }
+
+    renderUserQuickActions();
+    applyAvatarToHeader();
+  }
+
+  async function savePreferences(){
+    const status = document.getElementById("prefsStatus");
+    if (status) status.textContent = "Guardando…";
+    try{
+      const r = await prefsFetch("/me/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(USER_PREFS || PREFS_DEFAULT),
+      });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || !j.ok) throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
+      if (status) status.textContent = "OK · Guardado";
+      renderUserQuickActions();
+      applyAvatarToHeader();
+    }catch(e){
+      if (status) status.textContent = "ERROR: " + (e.message || String(e));
+    }
+  }
+
+  function renderPrefsModal(){
+    if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
+    if (!Array.isArray(USER_PREFS.quickActions)) USER_PREFS.quickActions = [];
+    if (!USER_PREFS.avatar) USER_PREFS.avatar = { ...PREFS_DEFAULT.avatar };
+
+    // Quick actions editor
+    const listEl = document.getElementById("qaList");
+    listEl.innerHTML = "";
+
+    USER_PREFS.quickActions.forEach((qa, idx) => {
+      const card = document.createElement("div");
+      card.style.border = "1px solid var(--border)";
+      card.style.background = "#fff";
+      card.style.borderRadius = "14px";
+      card.style.padding = "12px";
+      card.style.display = "grid";
+      card.style.gap = "10px";
+
+      card.innerHTML = `
+        <div class="row" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label>Título</label>
+            <input data-idx="${idx}" data-field="label" value="${escapeHtml(qa.label || "")}" />
+          </div>
+          <div>
+            <label>Alcance</label>
+            <select data-idx="${idx}" data-field="scope" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+              <option value="internal">SGC</option>
+              <option value="insurance">Aseguradoras</option>
+            </select>
+          </div>
+          <div style="grid-column:1 / -1;">
+            <label>Texto</label>
+            <textarea data-idx="${idx}" data-field="text" rows="3" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" data-act="up" data-idx="${idx}" type="button">↑</button>
+          <button class="btn" data-act="down" data-idx="${idx}" type="button">↓</button>
+          <button class="btn" data-act="del" data-idx="${idx}" type="button">Eliminar</button>
+          <button class="btn primary" data-act="use" data-idx="${idx}" type="button">Usar (pegar)</button>
+        </div>
+      `;
+      listEl.appendChild(card);
+
+      const ta = card.querySelector("textarea[data-field='text']");
+      ta.value = qa.text || "";
+
+      const sel = card.querySelector("select[data-field='scope']");
+      sel.value = (qa.scope === "insurance") ? "insurance" : "internal";
+
+      card.querySelectorAll("input,textarea,select").forEach(el => {
+        el.addEventListener("input", (e) => {
+          const i = Number(e.target.dataset.idx);
+          const f = e.target.dataset.field;
+          USER_PREFS.quickActions[i][f] = e.target.value;
+        });
+        el.addEventListener("change", (e) => {
+          const i = Number(e.target.dataset.idx);
+          const f = e.target.dataset.field;
+          USER_PREFS.quickActions[i][f] = e.target.value;
+        });
+      });
+
+      card.querySelectorAll("button[data-act]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.dataset.idx);
+          const act = btn.dataset.act;
+          if (act === "del"){
+            USER_PREFS.quickActions.splice(i, 1);
+            renderPrefsModal();
+            return;
+          }
+          if (act === "up" && i > 0){
+            const t = USER_PREFS.quickActions[i-1];
+            USER_PREFS.quickActions[i-1] = USER_PREFS.quickActions[i];
+            USER_PREFS.quickActions[i] = t;
+            renderPrefsModal();
+            return;
+          }
+          if (act === "down" && i < USER_PREFS.quickActions.length - 1){
+            const t = USER_PREFS.quickActions[i+1];
+            USER_PREFS.quickActions[i+1] = USER_PREFS.quickActions[i];
+            USER_PREFS.quickActions[i] = t;
+            renderPrefsModal();
+            return;
+          }
+          if (act === "use"){
+            const qa = USER_PREFS.quickActions[i];
+            quick(qa.text || "", qa.scope || null);
+            closePrefs();
+          }
+        });
+      });
+    });
+
+    // Avatar controls
+    const av = USER_PREFS.avatar;
+    document.getElementById("avFace").value = av.face || "rounded";
+    document.getElementById("avEyes").value = av.eyes || "calm";
+    document.getElementById("avMouth").value = av.mouth || "smile";
+    document.getElementById("avColor").value = clampHexColor(av.color);
+
+    const prev = document.getElementById("avatarPreview");
+    prev.innerHTML = avatarSvg(av);
+
+    function syncAvatar(){
+      av.face = document.getElementById("avFace").value;
+      av.eyes = document.getElementById("avEyes").value;
+      av.mouth = document.getElementById("avMouth").value;
+      av.color = clampHexColor(document.getElementById("avColor").value);
+      prev.innerHTML = avatarSvg(av);
+    }
+
+    ["avFace","avEyes","avMouth","avColor"].forEach(id => {
+      document.getElementById(id).addEventListener("change", syncAvatar);
+      document.getElementById(id).addEventListener("input", syncAvatar);
+    });
   }
 
   // ======================
@@ -1436,8 +1821,10 @@ addBotHtml(
 
   function quick(text, scope){
     if(scope) setScope(scope);
-    document.getElementById("q").value = text;
-    send();
+    const el = document.getElementById("q");
+    el.value = text;
+    el.focus();
+    // NO auto-send: el usuario puede editar antes de enviar
   }
 
   // ======================
@@ -1467,10 +1854,20 @@ addBotHtml(
     document.getElementById("scopeInternal").addEventListener("click", ()=>setScope("internal"));
     document.getElementById("scopeInsurance").addEventListener("click", ()=>setScope("insurance"));
 
-    document.getElementById("q1").addEventListener("click", ()=>quick("¿Cuál es el procedimiento para realizar un reembolso en caja?","internal"));
-    document.getElementById("q2").addEventListener("click", ()=>quick("¿Cómo debe venir preparado un paciente para una colonoscopía?","internal"));
-    document.getElementById("q3").addEventListener("click", ()=>quick("Copago Saludsa Masivos para consulta de medicina general","insurance"));
-    document.getElementById("q4").addEventListener("click", ()=>quick("¿Qué políticas internas aplican para admisión de pacientes?","internal"));
+    // preferences
+    document.getElementById("prefsBtn").addEventListener("click", openPrefs);
+    document.getElementById("closePrefsBtn").addEventListener("click", closePrefs);
+    document.getElementById("prefsReloadBtn").addEventListener("click", async ()=>{
+      await loadPreferences();
+      renderPrefsModal();
+    });
+    document.getElementById("prefsSaveBtn").addEventListener("click", savePreferences);
+    document.getElementById("qaAddBtn").addEventListener("click", ()=>{
+      if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
+      const id = "qa_" + Math.random().toString(36).slice(2, 10);
+      USER_PREFS.quickActions.push({ id, label: "Nueva acción", text: "Escribe aquí...", scope: getScope() });
+      renderPrefsModal();
+    });
   }
 
   // ======================

@@ -11,26 +11,30 @@
 
   <style>
     :root{
-      --bg:#f5f7fb;
+      --bg:#f4f6fb;
       --panel:#ffffff;
-      --panel2:#f1f5ff;
-      --border:#e2e8f0;
-      --muted:#667085;
-      --text:#1f2937;
-      --brand:#386cff;
-      --brand-2:#6a5cff;
+      --panel2:#f5f7ff;
+      --border:rgba(148,163,184,.35);
+      --muted:#64748b;
+      --text:#111827;
+      --brand:#0a84ff;
+      --brand-2:#5b6bff;
+      --glass:rgba(255,255,255,.62);
+      --glass-strong:rgba(255,255,255,.78);
+      --glass-border:rgba(255,255,255,.5);
       --danger:#e5484d;
       --ok:#22c55e;
       --warm:#f6b26b;
-      --shadow:0 14px 34px rgba(15,23,42,.08);
+      --shadow:0 24px 60px rgba(15,23,42,.12);
+      --shadow-soft:0 16px 30px rgba(15,23,42,.08);
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       background:
-        radial-gradient(900px 520px at 5% -10%, #e7edff 0%, transparent 60%),
-        radial-gradient(820px 420px at 95% 10%, #efe9ff 0%, transparent 55%),
+        radial-gradient(900px 520px at 6% -10%, rgba(90,125,255,.22) 0%, transparent 62%),
+        radial-gradient(820px 420px at 95% 10%, rgba(153,120,255,.2) 0%, transparent 58%),
         var(--bg);
       color:var(--text);
       height:100vh;
@@ -39,28 +43,29 @@
     header{
       display:flex; align-items:center; justify-content:space-between;
       gap:16px; padding:14px 20px;
-      border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg, var(--panel2), rgba(241,245,255,.65));
+      border-bottom:1px solid var(--glass-border);
+      background:linear-gradient(180deg, rgba(255,255,255,.78), rgba(248,250,255,.55));
       position:sticky; top:0; z-index:5;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(18px);
     }
     .brand{display:flex; align-items:center; gap:14px;}
     .nexo-logo{
       width:40px; height:40px; border-radius:14px;
       display:grid; place-items:center;
-      background:linear-gradient(135deg, rgba(56,108,255,.16), rgba(106,92,255,.2));
-      border:1px solid rgba(56,108,255,.2);
+      background:linear-gradient(135deg, rgba(10,132,255,.24), rgba(91,107,255,.24));
+      border:1px solid rgba(255,255,255,.5);
       overflow:hidden;
     }
     .nexo-logo img{width:100%; height:100%; object-fit:cover}
     .title{display:flex; flex-direction:column; line-height:1.1}
-    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.35px; display:flex; gap:8px; align-items:center;}
+    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.4px; display:flex; gap:8px; align-items:center;}
     .title span{font-size:12px; color:var(--muted)}
     .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
     .chip{
       font-size:12px; padding:6px 10px; border-radius:999px;
-      border:1px solid var(--border); color:var(--muted);
-      background:rgba(255,255,255,.8);
+      border:1px solid var(--glass-border); color:var(--muted);
+      background:var(--glass);
+      backdrop-filter: blur(12px);
       display:flex; gap:8px; align-items:center;
     }
     .chip .pulse{position:relative;}
@@ -74,9 +79,10 @@
     .dot{width:8px; height:8px; border-radius:50%;}
     .btn{
       padding:10px 12px; border-radius:12px; border:1px solid var(--border);
-      background:#fff; color:var(--text); cursor:pointer;
+      background:var(--glass-strong); color:var(--text); cursor:pointer;
       font-weight:700;
-      box-shadow:0 6px 16px rgba(15,23,42,.08);
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(12px);
     }
     .btn.primary{background:var(--brand); color:#fff; border-color:transparent;}
     .btn.ghost{background:transparent; box-shadow:none;}
@@ -101,10 +107,10 @@
     .microHint{
       font-size:12px; color:var(--muted);
       padding:8px 10px;
-      border:1px dashed rgba(56,108,255,.25);
-      background:rgba(255,255,255,.6);
+      border:1px dashed rgba(148,163,184,.4);
+      background:var(--glass);
       border-radius:12px;
-      box-shadow:0 6px 16px rgba(15,23,42,.05);
+      box-shadow:var(--shadow-soft);
       display:flex; gap:8px; align-items:center;
     }
 
@@ -131,24 +137,26 @@
       .grid{grid-template-columns:1fr}
     }
     .card{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:16px;
+      background:var(--glass);
+      border:1px solid var(--glass-border);
+      border-radius:20px;
       overflow:hidden;
       box-shadow:var(--shadow);
+      backdrop-filter: blur(16px);
     }
     .card.stack{display:flex; flex-direction:column; min-height:0;}
     .card .hd{
       padding:12px 14px;
-      border-bottom:1px solid var(--border);
+      border-bottom:1px solid var(--glass-border);
       display:flex; justify-content:space-between; align-items:center;
-      background:rgba(56,108,255,.06);
+      background:rgba(255,255,255,.55);
+      backdrop-filter: blur(16px);
     }
     .card .hd h2{margin:0; font-size:13px; letter-spacing:.25px; color:var(--muted); font-weight:800; text-transform:uppercase}
     .card .bd{padding:14px}
     .chat{
       flex:1; min-height:0; overflow:auto; padding:18px;
-      background:linear-gradient(180deg, #fdfdff, #f5f7fb);
+      background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(244,246,251,.9));
     }
 
     /* ===== Banner “honesto” ===== */
@@ -204,10 +212,10 @@
 
     .bubble{
       max-width:min(70%, 820px);
-      border:1px solid var(--border);
+      border:1px solid var(--glass-border);
       border-radius:14px;
       padding:10px 12px;
-      background:#fff;
+      background:rgba(255,255,255,.85);
       overflow:hidden;
     }
     .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
@@ -232,8 +240,8 @@
     textarea{
       flex:1; resize:none; padding:12px 12px;
       border-radius:14px;
-      border:1px solid var(--border);
-      background:#fff;
+      border:1px solid var(--glass-border);
+      background:var(--glass-strong);
       color:var(--text);
       min-height:46px;
       outline:none;
@@ -381,15 +389,16 @@
     }
     .loginShell{
       padding:24px;
-      border-radius:22px;
-      border:1px solid rgba(56,108,255,.2);
+      border-radius:26px;
+      border:1px solid rgba(255,255,255,.55);
       background:
-        linear-gradient(135deg, rgba(56,108,255,.18), rgba(106,92,255,.08)),
-        radial-gradient(420px 280px at 20% 20%, rgba(255,255,255,.7), transparent 70%);
-      box-shadow: 0 24px 70px rgba(15,23,42,.14);
+        linear-gradient(135deg, rgba(10,132,255,.14), rgba(91,107,255,.05)),
+        radial-gradient(420px 280px at 20% 20%, rgba(255,255,255,.9), transparent 70%);
+      box-shadow: 0 36px 80px rgba(15,23,42,.14);
+      backdrop-filter: blur(18px);
       display:flex;
       flex-direction:column;
-      gap:16px;
+      gap:14px;
     }
     .loginBrand{
       display:flex;
@@ -427,7 +436,7 @@
     .loginBrand h2{
       margin:0;
       font-size:24px;
-      letter-spacing:.3px;
+      letter-spacing:.4px;
     }
     .loginBrand span{
       display:block;
@@ -436,9 +445,9 @@
       font-weight:700;
     }
     .loginHeroText{
-      font-size:14px;
+      font-size:13px;
       color:#384152;
-      line-height:1.5;
+      line-height:1.45;
       margin:0;
     }
     .loginHeroTagline{
@@ -456,8 +465,9 @@
       padding:12px;
       border-radius:14px;
       border:1px solid rgba(255,255,255,.6);
-      background:rgba(255,255,255,.7);
-      box-shadow:0 8px 18px rgba(15,23,42,.08);
+      background:rgba(255,255,255,.78);
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(12px);
       font-size:12px;
       color:#334155;
       font-weight:700;
@@ -477,8 +487,9 @@
       flex:1 1 140px;
       padding:12px;
       border-radius:14px;
-      border:1px solid rgba(56,108,255,.2);
-      background:rgba(255,255,255,.65);
+      border:1px solid rgba(255,255,255,.6);
+      background:rgba(255,255,255,.74);
+      backdrop-filter: blur(12px);
       font-size:12px;
       color:#334155;
       font-weight:700;
@@ -491,19 +502,20 @@
     }
     .loginPanel{
       padding:22px;
-      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,244,255,.95));
-      border:1px solid rgba(226,232,240,.9);
-      border-radius:22px;
-      box-shadow: 0 22px 60px rgba(15,23,42,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(244,246,255,.78));
+      border:1px solid rgba(255,255,255,.55);
+      border-radius:26px;
+      box-shadow: 0 30px 70px rgba(15,23,42,.14);
+      backdrop-filter: blur(18px);
       display:flex;
       flex-direction:column;
-      gap:12px;
+      gap:10px;
     }
     .loginPanel h3{margin:0 0 8px 0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
     .loginPanel .big{
       font-size:20px;
       font-weight:900;
-      margin:0 0 10px 0;
+      margin:0 0 6px 0;
     }
     .loginPanel .sub{color:var(--muted); font-size:12px; margin:0 0 14px 0; line-height:1.35}
     .loginPanel .row2{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
@@ -519,8 +531,8 @@
       color:#1f2937;
     }
     .loginSteps{
-      border:1px solid rgba(226,232,240,.8);
-      background:#fff;
+      border:1px solid rgba(255,255,255,.6);
+      background:rgba(255,255,255,.78);
       border-radius:16px;
       padding:12px;
       font-size:12px;
@@ -658,53 +670,38 @@
           </div>
         </div>
         <div>
-          <h2>Tu caja, más rápida</h2>
-          <span>Metrored · Experiencia en salud que te respalda</span>
+          <h2>La mejor herramienta de caja</h2>
+          <span>Metrored · IA de conocimiento</span>
         </div>
       </div>
-      <div class="loginHeroTagline">Una sola pantalla para resolver dudas y atender mejor.</div>
-      <p class="loginHeroText">
-        Resuelve consultas de coberturas, políticas y procesos en segundos mientras atiendes.
-        Todo con respuestas claras y fáciles de aplicar en ventanilla.
-      </p>
+      <div class="loginHeroTagline">Precisión inmediata en una sola pantalla.</div>
+      <p class="loginHeroText">Coberturas y procesos con evidencia oficial, sin fricción.</p>
       <div class="loginHighlights">
         <div class="loginHighlight">
           <span>💳</span>
-          <div>Guías rápidas para pagos, reembolsos y copagos.</div>
+          <div>Pagos y copagos, sin espera.</div>
         </div>
         <div class="loginHighlight">
           <span>📌</span>
-          <div>Respuestas directas para no dejar al paciente esperando.</div>
-        </div>
-        <div class="loginHighlight">
-          <span>📎</span>
-          <div>Siempre sabes dónde está el documento oficial.</div>
-        </div>
-        <div class="loginHighlight">
-          <span>✨</span>
-          <div>Interfaz simple y clara para tu trabajo diario.</div>
+          <div>Respuesta exacta, con respaldo.</div>
         </div>
       </div>
       <div class="loginStats">
         <div class="loginStat">
           <strong>1 click</strong>
-          Accede y empieza a consultar.
+          Atención inmediata.
         </div>
         <div class="loginStat">
           <strong>+120</strong>
-          Documentos internos listos.
-        </div>
-        <div class="loginStat">
-          <strong>Sin vueltas</strong>
-          Encuentra la respuesta correcta.
+          Fuentes validadas.
         </div>
       </div>
     </div>
 
     <div class="loginPanel">
       <h3>Ingreso</h3>
-      <p class="big">Empieza tu turno en segundos</p>
-      <p class="sub">Ingresa con tu cuenta corporativa y accede al asistente de caja.</p>
+      <p class="big">Inicia tu turno</p>
+      <p class="sub">Acceso corporativo seguro.</p>
 
       <div class="row2">
         <button class="btn primary" id="loginBtn2">Iniciar sesión</button>
@@ -712,9 +709,9 @@
       </div>
 
       <div class="loginAssurance">
-        <div><strong>Acceso:</strong> tu cuenta corporativa de Metrored</div>
-        <div><strong>Confianza:</strong> respuestas con respaldo de documentos</div>
-        <div><strong>Soporte:</strong> dudas de caja, admisión y seguros</div>
+        <div><strong>Acceso:</strong> cuenta Metrored</div>
+        <div><strong>Confianza:</strong> evidencia oficial</div>
+        <div><strong>Soporte:</strong> caja, admisión, seguros</div>
       </div>
 
       <div class="tiny" id="loginMsg" style="margin-top:10px;"></div>
@@ -723,13 +720,13 @@
       <div class="loginSteps">
         <strong>Checklist rápido</strong>
         <ol>
-          <li>Inicia sesión con tu cuenta Metrored.</li>
-          <li>Escribe tu pregunta tal como la harías al supervisor.</li>
-          <li>Revisa la fuente si necesitas confirmación.</li>
+          <li>Inicia sesión.</li>
+          <li>Escribe tu consulta.</li>
+          <li>Confirma la fuente.</li>
         </ol>
       </div>
       <div class="loginFootnote">
-        Si esta es tu primera vez en este equipo, configura el Worker URL antes de empezar.
+        Primera vez aquí: configura el Worker URL.
       </div>
     </div>
   </div>
@@ -902,7 +899,7 @@
 
   const DEFAULT_WORKER = "https://nexo-worker.dbermeo.workers.dev";
   const DEFAULT_SCOPE  = "insurance";
-  const DEFAULT_AI     = "0"; // local
+  const DEFAULT_AI     = "1"; // IA encendida por defecto
 
   function getScope(){
     return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
@@ -1462,6 +1459,7 @@ addBotHtml(
       addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
       showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");
       setAI(false);
+      openConfig();
     }finally{
       if(sendBtn) sendBtn.disabled = false;
     }
@@ -1522,16 +1520,14 @@ addBotHtml(
   if(localStorage.getItem(LS_AI) == null){
     localStorage.setItem(LS_AI, DEFAULT_AI);
   }
+  if(!localStorage.getItem(LS_WORKER)){
+    localStorage.setItem(LS_WORKER, DEFAULT_WORKER);
+  }
   refreshAIUI();
   refreshHeaderBadges();
   clearChat();
 
   authInit().catch(()=>{});
-
-  // Abre config si no hay worker guardado
-  if(!localStorage.getItem(LS_WORKER)){
-    setTimeout(openConfig, 250);
-  }
 </script>
 </body>
 </html>

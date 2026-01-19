@@ -301,13 +301,23 @@
       border-radius:18px;
       overflow:hidden;
       box-shadow: 0 20px 60px rgba(15,23,42,.18);
+      /* Fix: modal content should scroll inside, not overflow off-screen */
+      max-height: calc(100vh - 56px);
+      display:flex;
+      flex-direction:column;
     }
     .modalHd{
       padding:14px 16px; border-bottom:1px solid var(--border);
       display:flex; justify-content:space-between; align-items:center;
     }
     .modalHd h3{margin:0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
-    .modalBd{padding:16px}
+    .modalBd{
+      padding:16px;
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
     .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
     @media (max-width: 720px){ .row{grid-template-columns:1fr} }
     label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px; font-weight:800}
@@ -840,40 +850,68 @@
         </div>
 
         <div style="grid-column:1 / -1; margin-top:16px;">
-          <label>Avatar (estilo Nexo)</label>
-          <div class="small">Elige cara, ojos, boca y color. Sin texto ni iniciales.</div>
+          <label>Robot del chat (Robot Builder)</label>
+          <div class="small">Personaliza el robot de Nexo (cabeza, ojos, boca, antena, cuerpo y colores). Cambia en vivo.</div>
 
           <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px;">
-            <div id="avatarPreview" style="width:56px;height:56px;"></div>
+            <div id="robotPreview" style="width:56px;height:56px;"></div>
 
-            <div style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0, 1fr)); width:min(520px, 100%);">
+            <div style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0, 1fr)); width:min(560px, 100%);">
               <div>
-                <label>Forma de cara</label>
-                <select id="avFace" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
-                  <option value="rounded">Rounded</option>
-                  <option value="oval">Oval</option>
-                  <option value="square">Square</option>
+                <label>Cabeza</label>
+                <select id="rbHead" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="capsule">Cápsula</option>
+                  <option value="square">Cuadrada</option>
+                  <option value="hex">Hex</option>
                 </select>
               </div>
               <div>
                 <label>Ojos</label>
-                <select id="avEyes" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
-                  <option value="calm">Calm</option>
-                  <option value="happy">Happy</option>
-                  <option value="focused">Focused</option>
+                <select id="rbEyes" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="dual">Duales</option>
+                  <option value="mono">Mono</option>
+                  <option value="visor">Visor</option>
+                  <option value="spark">Spark</option>
                 </select>
               </div>
               <div>
                 <label>Boca</label>
-                <select id="avMouth" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                <select id="rbMouth" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="speaker">Speaker</option>
+                  <option value="grille">Grille</option>
                   <option value="smile">Smile</option>
                   <option value="neutral">Neutral</option>
-                  <option value="grin">Grin</option>
                 </select>
               </div>
               <div>
-                <label>Color</label>
-                <input id="avColor" type="color" value="#5b6bff" style="width:100%; height:46px; padding:6px 10px;" />
+                <label>Antena</label>
+                <select id="rbAntenna" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="none">Ninguna</option>
+                  <option value="dot">Punto</option>
+                  <option value="double">Doble</option>
+                  <option value="dish">Antena</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Cuerpo</label>
+                <select id="rbBody" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="none">Sin cuerpo</option>
+                  <option value="torso">Torso</option>
+                  <option value="hover">Hover</option>
+                </select>
+              </div>
+              <div>
+                <label>Color principal</label>
+                <input id="rbPrimary" type="color" value="#5b6bff" style="width:100%; height:46px; padding:6px 10px;" />
+              </div>
+              <div>
+                <label>Color secundario</label>
+                <input id="rbSecondary" type="color" value="#0a84ff" style="width:100%; height:46px; padding:6px 10px;" />
+              </div>
+              <div style="display:flex; align-items:end; gap:10px;">
+                <label style="margin:0;">Glow</label>
+                <input id="rbGlow" type="checkbox" style="width:20px; height:20px;" />
               </div>
             </div>
           </div>
@@ -948,7 +986,6 @@
   // UI helpers
   // ======================
   const chatEl = document.getElementById("chat");
-  const botAvatarHtml = `<img src="nexo-logo.png" alt="Nexo" />`;
 
   // ======================
   // Preferences (KV via worker)
@@ -962,7 +999,18 @@
       { id: "qa_copago", label: "Copago Saludsa Masivos", text: "Copago Saludsa Masivos para consulta de medicina general", scope: "insurance" },
       { id: "qa_admision", label: "Política admisión", text: "¿Qué políticas internas aplican para admisión de pacientes?", scope: "internal" }
     ],
-    avatar: { face: "rounded", eyes: "calm", mouth: "smile", color: "#5b6bff" },
+    // User avatar is fixed (no custom). Bot robot is customizable.
+    userAvatar: { face: "rounded", eyes: "calm", mouth: "smile", color: "#5b6bff" },
+    robot: {
+      head: "capsule",       // capsule | square | hex
+      eyes: "dual",          // dual | mono | visor | spark
+      mouth: "speaker",      // speaker | grille | smile | neutral
+      antenna: "dot",        // none | dot | double | dish
+      body: "torso",         // none | torso | hover
+      primary: "#5b6bff",     // #RRGGBB
+      secondary: "#0a84ff",   // #RRGGBB
+      glow: true
+    },
     updatedAt: null,
   };
 
@@ -1041,15 +1089,17 @@
   }
 
   // ======================
-  // Avatar builder (SVG)
+  // Avatars (SVG)
+  // - userAvatarSvg: fixed (not customizable)
+  // - robotSvg: customizable chat bot (Robot Builder)
   // ======================
   function clampHexColor(c){
     const s = String(c || "").trim();
     return /^#([0-9a-fA-F]{6})$/.test(s) ? s : "#5b6bff";
   }
 
-  function avatarSvg(avatar){
-    const a = avatar || PREFS_DEFAULT.avatar;
+  function userAvatarSvg(avatar){
+    const a = avatar || PREFS_DEFAULT.userAvatar;
     const face = a.face || "rounded";
     const eyes = a.eyes || "calm";
     const mouth = a.mouth || "smile";
@@ -1106,16 +1156,120 @@
     `.trim();
   }
 
-  function currentAvatar(){
-    return (USER_PREFS && USER_PREFS.avatar) ? USER_PREFS.avatar : PREFS_DEFAULT.avatar;
+  function currentUserAvatar(){
+    return PREFS_DEFAULT.userAvatar;
+  }
+
+  function currentRobot(){
+    return (USER_PREFS && USER_PREFS.robot) ? USER_PREFS.robot : PREFS_DEFAULT.robot;
+  }
+
+  function robotSvg(robot){
+    const r = robot || PREFS_DEFAULT.robot;
+    const head = r.head || "capsule";
+    const eyes = r.eyes || "dual";
+    const mouth = r.mouth || "speaker";
+    const antenna = r.antenna || "dot";
+    const body = r.body || "torso";
+    const p = clampHexColor(r.primary);
+    const s = clampHexColor(r.secondary);
+    const glow = !!r.glow;
+
+    const headShape =
+      head === "square" ? `<rect x="14" y="12" width="36" height="30" rx="10" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>` :
+      head === "hex" ? `<path d="M32 10l14 8v18l-14 8-14-8V18l14-8z" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>` :
+      /* capsule */      `<rect x="12" y="12" width="40" height="30" rx="15" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>`;
+
+    const antennaSvg =
+      antenna === "none" ? "" :
+      antenna === "double" ? `
+        <path d="M28 12V7" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M36 12V7" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="28" cy="6" r="2.2" fill="${s}"/>
+        <circle cx="36" cy="6" r="2.2" fill="${s}"/>` :
+      antenna === "dish" ? `
+        <path d="M32 12V6" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M26 6c3-4 9-4 12 0" fill="none" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="6" r="2.1" fill="${s}"/>` :
+      /* dot */ `
+        <path d="M32 12V6" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="5" r="2.4" fill="${s}"/>`;
+
+    const eyesSvg =
+      eyes === "mono" ? `
+        <rect x="20" y="22" width="24" height="10" rx="5" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <circle cx="32" cy="27" r="3" fill="${s}"/>` :
+      eyes === "visor" ? `
+        <rect x="18" y="21" width="28" height="12" rx="6" fill="rgba(15,23,42,.10)" stroke="rgba(15,23,42,.25)"/>
+        <path d="M20 27h24" stroke="${s}" stroke-width="2" stroke-linecap="round" opacity=".7"/>` :
+      eyes === "spark" ? `
+        <circle cx="26" cy="27" r="3" fill="${s}"/>
+        <circle cx="38" cy="27" r="3" fill="${s}"/>
+        <path d="M24 20l2 3 3 1-3 1-2 3-1-3-3-1 3-1 1-3z" fill="${s}" opacity=".45"/>` :
+      /* dual */ `
+        <circle cx="26" cy="27" r="3" fill="${s}"/>
+        <circle cx="38" cy="27" r="3" fill="${s}"/>`;
+
+    const mouthSvg =
+      mouth === "grille" ? `
+        <rect x="23" y="34" width="18" height="8" rx="4" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <path d="M26 36h12" stroke="rgba(15,23,42,.35)" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M26 39h12" stroke="rgba(15,23,42,.35)" stroke-width="1.6" stroke-linecap="round"/>` :
+      mouth === "smile" ? `
+        <path d="M24 38c2 3 6 4 8 4s6-1 8-4" fill="none" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>` :
+      mouth === "neutral" ? `
+        <path d="M26 40h12" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>` :
+      /* speaker */ `
+        <rect x="22" y="35" width="20" height="7" rx="3.5" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <circle cx="27" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>
+        <circle cx="32" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>
+        <circle cx="37" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>`;
+
+    const bodySvg =
+      body === "none" ? "" :
+      body === "hover" ? `
+        <path d="M20 49h24" stroke="rgba(15,23,42,.18)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M24 45h16" stroke="rgba(15,23,42,.12)" stroke-width="6" stroke-linecap="round"/>` :
+      /* torso */ `
+        <rect x="18" y="44" width="28" height="12" rx="6" fill="rgba(15,23,42,.04)" stroke="rgba(148,163,184,.55)"/>
+        <circle cx="32" cy="50" r="3" fill="${s}" opacity=".55"/>`;
+
+    const glowSvg = glow ? `<filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` : "";
+    const headFilter = glow ? `filter="url(#gl)"` : "";
+
+    return `
+      <svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="robot">
+        <defs>
+          <linearGradient id="hp" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${p}" stop-opacity=".35"/>
+            <stop offset="1" stop-color="${p}" stop-opacity=".10"/>
+          </linearGradient>
+          <linearGradient id="hs" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${s}" stop-opacity=".30"/>
+            <stop offset="1" stop-color="${s}" stop-opacity=".08"/>
+          </linearGradient>
+          ${glowSvg}
+        </defs>
+        <rect x="6" y="6" width="52" height="52" rx="18" fill="white" opacity="0.92"/>
+        <g ${headFilter}>
+          ${antennaSvg}
+          ${headShape}
+          <path d="M14 26h36" stroke="url(#hs)" stroke-width="2" opacity=".7"/>
+          ${eyesSvg}
+          ${mouthSvg}
+        </g>
+        ${bodySvg}
+        <rect x="6" y="6" width="52" height="52" rx="18" fill="none" stroke="rgba(148,163,184,.45)"/>
+      </svg>
+    `.trim();
   }
 
   function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
     const avatar = role === "me"
-      ? `<div class="avatar user">${avatarSvg(currentAvatar())}</div>`
-      : `<div class="avatar bot">${botAvatarHtml}</div>`;
+      ? `<div class="avatar user">${userAvatarSvg(currentUserAvatar())}</div>`
+      : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
     const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
@@ -1153,7 +1307,7 @@ function stripSourcesFromAnswer(answer){
     const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
     div.innerHTML = `
-      <div class="avatar bot">${botAvatarHtml}</div>
+      <div class="avatar bot">${robotSvg(currentRobot())}</div>
       <div class="bubble">
         <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
         <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
@@ -1499,30 +1653,15 @@ function stripSourcesFromAnswer(answer){
     document.getElementById("prefsBackdrop").style.display = "none";
   }
 
-  function applyAvatarToHeader(){
-    const userChip = document.getElementById("userChip");
-    if (!userChip) return;
+  function applyRobotEverywhere(){
+    // Update robot avatars already rendered in the chat
+    document.querySelectorAll(".avatar.bot").forEach(el => {
+      el.innerHTML = robotSvg(currentRobot());
+    });
 
-    let holder = document.getElementById("userAvatar");
-    if (!holder){
-      holder = document.createElement("div");
-      holder.id = "userAvatar";
-      holder.style.width = "22px";
-      holder.style.height = "22px";
-      holder.style.borderRadius = "8px";
-      holder.style.overflow = "hidden";
-      holder.style.display = "grid";
-      holder.style.placeItems = "center";
-      holder.style.border = "1px solid var(--border)";
-      holder.style.background = "#fff";
-      userChip.insertBefore(holder, userChip.firstChild);
-    }
-    holder.innerHTML = avatarSvg(currentAvatar());
-
-    const photoEl = document.getElementById("userPhoto");
-    const initialsEl = document.getElementById("userInitials");
-    if (photoEl) photoEl.style.display = "none";
-    if (initialsEl) initialsEl.style.display = "none";
+    // If modal is open, keep preview in sync
+    const prev = document.getElementById("robotPreview");
+    if (prev) prev.innerHTML = robotSvg(currentRobot());
   }
 
   function renderUserQuickActions(){
@@ -1565,7 +1704,7 @@ function stripSourcesFromAnswer(answer){
     }
 
     renderUserQuickActions();
-    applyAvatarToHeader();
+    applyRobotEverywhere();
   }
 
   async function savePreferences(){
@@ -1581,7 +1720,7 @@ function stripSourcesFromAnswer(answer){
       if (!r.ok || !j || !j.ok) throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
       if (status) status.textContent = "OK · Guardado";
       renderUserQuickActions();
-      applyAvatarToHeader();
+      applyRobotEverywhere();
     }catch(e){
       if (status) status.textContent = "ERROR: " + (e.message || String(e));
     }
@@ -1590,7 +1729,7 @@ function stripSourcesFromAnswer(answer){
   function renderPrefsModal(){
     if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
     if (!Array.isArray(USER_PREFS.quickActions)) USER_PREFS.quickActions = [];
-    if (!USER_PREFS.avatar) USER_PREFS.avatar = { ...PREFS_DEFAULT.avatar };
+    if (!USER_PREFS.robot) USER_PREFS.robot = { ...PREFS_DEFAULT.robot };
 
     // Quick actions editor
     const listEl = document.getElementById("qaList");
@@ -1684,27 +1823,39 @@ function stripSourcesFromAnswer(answer){
       });
     });
 
-    // Avatar controls
-    const av = USER_PREFS.avatar;
-    document.getElementById("avFace").value = av.face || "rounded";
-    document.getElementById("avEyes").value = av.eyes || "calm";
-    document.getElementById("avMouth").value = av.mouth || "smile";
-    document.getElementById("avColor").value = clampHexColor(av.color);
+    // Robot Builder controls (chat bot avatar)
+    const rb = USER_PREFS.robot || (USER_PREFS.robot = { ...PREFS_DEFAULT.robot });
 
-    const prev = document.getElementById("avatarPreview");
-    prev.innerHTML = avatarSvg(av);
+    document.getElementById("rbHead").value = rb.head || "capsule";
+    document.getElementById("rbEyes").value = rb.eyes || "dual";
+    document.getElementById("rbMouth").value = rb.mouth || "speaker";
+    document.getElementById("rbAntenna").value = rb.antenna || "dot";
+    document.getElementById("rbBody").value = rb.body || "torso";
+    document.getElementById("rbPrimary").value = clampHexColor(rb.primary);
+    document.getElementById("rbSecondary").value = clampHexColor(rb.secondary);
+    document.getElementById("rbGlow").checked = !!rb.glow;
 
-    function syncAvatar(){
-      av.face = document.getElementById("avFace").value;
-      av.eyes = document.getElementById("avEyes").value;
-      av.mouth = document.getElementById("avMouth").value;
-      av.color = clampHexColor(document.getElementById("avColor").value);
-      prev.innerHTML = avatarSvg(av);
+    const prev = document.getElementById("robotPreview");
+    prev.innerHTML = robotSvg(rb);
+
+    function syncRobot(){
+      rb.head = document.getElementById("rbHead").value;
+      rb.eyes = document.getElementById("rbEyes").value;
+      rb.mouth = document.getElementById("rbMouth").value;
+      rb.antenna = document.getElementById("rbAntenna").value;
+      rb.body = document.getElementById("rbBody").value;
+      rb.primary = clampHexColor(document.getElementById("rbPrimary").value);
+      rb.secondary = clampHexColor(document.getElementById("rbSecondary").value);
+      rb.glow = !!document.getElementById("rbGlow").checked;
+      prev.innerHTML = robotSvg(rb);
+      // required: should change immediately
+      applyRobotEverywhere();
     }
 
-    ["avFace","avEyes","avMouth","avColor"].forEach(id => {
-      document.getElementById(id).addEventListener("change", syncAvatar);
-      document.getElementById(id).addEventListener("input", syncAvatar);
+    ["rbHead","rbEyes","rbMouth","rbAntenna","rbBody","rbPrimary","rbSecondary","rbGlow"].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("change", syncRobot);
+      el.addEventListener("input", syncRobot);
     });
   }
 

@@ -205,6 +205,7 @@
       overflow:hidden;
     }
     .avatar.bot img{width:100%; height:100%; object-fit:cover}
+    .avatar.user img{width:100%; height:100%; object-fit:cover; border-radius:12px; display:block;}
 
     /* ✅ Evitar desbordes por texto/URLs largos */
     .bubble, .bubble p, .chat, .bubble a, .bubble li{
@@ -1267,9 +1268,12 @@
   function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
-    const avatar = role === "me"
-      ? `<div class="avatar user">${userAvatarSvg(currentUserAvatar())}</div>`
-      : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
+const photoEl = document.getElementById("userPhoto");
+const userSrc = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
+
+const avatar = role === "me"
+  ? `<div class="avatar user">${userSrc ? `<img src="${escapeHtml(userSrc)}" alt="Usuario">` : userAvatarSvg(currentUserAvatar())}</div>`
+  : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
     const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
@@ -1428,16 +1432,19 @@ function stripSourcesFromAnswer(answer){
       verifiedEl.textContent = shortTenant ? `Verificado · ${shortTenant}` : "Verificado";
     }
 
-    if (photoEl){
-      if (photoUrl){
-        photoEl.src = photoUrl;
-        photoEl.style.display = "block";
-        if (initialsEl) initialsEl.style.display = "none";
-      } else {
-        photoEl.style.display = "none";
-        if (initialsEl) initialsEl.style.display = "grid";
-      }
-    }
+if (photoEl){
+  if (photoUrl){
+    photoEl.src = photoUrl;
+    photoEl.style.display = "block";
+    if (initialsEl) initialsEl.style.display = "none";
+    // 🔥 actualiza también los avatares del chat
+    refreshUserPhotosInChat();
+  } else {
+    photoEl.style.display = "none";
+    if (initialsEl) initialsEl.style.display = "grid";
+  }
+}
+
 
     if (userChip) userChip.style.display = "flex";
   }
@@ -1730,7 +1737,7 @@ function stripSourcesFromAnswer(answer){
     if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
     if (!Array.isArray(USER_PREFS.quickActions)) USER_PREFS.quickActions = [];
     if (!USER_PREFS.robot) USER_PREFS.robot = { ...PREFS_DEFAULT.robot };
-
+    
     // Quick actions editor
     const listEl = document.getElementById("qaList");
     listEl.innerHTML = "";
@@ -1851,7 +1858,22 @@ function stripSourcesFromAnswer(answer){
       // required: should change immediately
       applyRobotEverywhere();
     }
+function refreshUserPhotosInChat(){
+  const photoEl = document.getElementById("userPhoto");
+  const userSrc = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
+  if (!userSrc) return;
 
+  document.querySelectorAll(".msg.me .avatar.user").forEach(av => {
+    // si ya tiene img, actualiza src
+    const img = av.querySelector("img");
+    if (img){
+      img.src = userSrc;
+      return;
+    }
+    // si no tiene img, reemplaza contenido por img
+    av.innerHTML = `<img src="${escapeHtml(userSrc)}" alt="Usuario">`;
+  });
+}
     ["rbHead","rbEyes","rbMouth","rbAntenna","rbBody","rbPrimary","rbSecondary","rbGlow"].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener("change", syncRobot);

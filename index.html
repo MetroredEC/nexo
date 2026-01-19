@@ -959,6 +959,9 @@
   const DEFAULT_SCOPE  = "insurance";
   const DEFAULT_AI     = "1"; // IA encendida por defecto
 
+  // Microsoft 365 photo (se usa como avatar del usuario en el chat)
+  let USER_PHOTO_URL = "";
+
   function getScope(){
     return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
   }
@@ -1019,6 +1022,27 @@
     return String(s || "")
       .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
       .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function getUserPhotoSrc(){
+    if (USER_PHOTO_URL) return USER_PHOTO_URL;
+    const photoEl = document.getElementById("userPhoto");
+    const src = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
+    return (src && src.length > 5) ? src : "";
+  }
+
+  function refreshUserPhotosInChat(){
+    const src = getUserPhotoSrc();
+    if (!src) return;
+
+    document.querySelectorAll(".msg.me .avatar.user").forEach(av => {
+      const img = av.querySelector("img");
+      if (img) {
+        img.src = src;
+      } else {
+        av.innerHTML = `<img src="${escapeHtml(src)}" alt="Usuario">`;
+      }
+    });
   }
 
   function setStatus(ok, text){
@@ -1268,12 +1292,10 @@
   function addMsg(role, who, text, metaTag, aiTag){
     const div = document.createElement("div");
     div.className = "msg " + (role === "me" ? "me" : "bot");
-const photoEl = document.getElementById("userPhoto");
-const userSrc = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
-
-const avatar = role === "me"
-  ? `<div class="avatar user">${userSrc ? `<img src="${escapeHtml(userSrc)}" alt="Usuario">` : userAvatarSvg(currentUserAvatar())}</div>`
-  : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
+    const userSrc = getUserPhotoSrc();
+    const avatar = role === "me"
+      ? `<div class="avatar user">${userSrc ? `<img src="${escapeHtml(userSrc)}" alt="Usuario">` : userAvatarSvg(currentUserAvatar())}</div>`
+      : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
     const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
@@ -1432,19 +1454,18 @@ function stripSourcesFromAnswer(answer){
       verifiedEl.textContent = shortTenant ? `Verificado · ${shortTenant}` : "Verificado";
     }
 
-if (photoEl){
-  if (photoUrl){
-    photoEl.src = photoUrl;
-    photoEl.style.display = "block";
-    if (initialsEl) initialsEl.style.display = "none";
-    // 🔥 actualiza también los avatares del chat
-    refreshUserPhotosInChat();
-  } else {
-    photoEl.style.display = "none";
-    if (initialsEl) initialsEl.style.display = "grid";
-  }
-}
-
+    if (photoEl){
+      if (photoUrl){
+        USER_PHOTO_URL = photoUrl;
+        photoEl.src = photoUrl;
+        photoEl.style.display = "block";
+        if (initialsEl) initialsEl.style.display = "none";
+        refreshUserPhotosInChat();
+      } else {
+        photoEl.style.display = "none";
+        if (initialsEl) initialsEl.style.display = "grid";
+      }
+    }
 
     if (userChip) userChip.style.display = "flex";
   }
@@ -1737,7 +1758,7 @@ if (photoEl){
     if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
     if (!Array.isArray(USER_PREFS.quickActions)) USER_PREFS.quickActions = [];
     if (!USER_PREFS.robot) USER_PREFS.robot = { ...PREFS_DEFAULT.robot };
-    
+
     // Quick actions editor
     const listEl = document.getElementById("qaList");
     listEl.innerHTML = "";
@@ -1858,22 +1879,7 @@ if (photoEl){
       // required: should change immediately
       applyRobotEverywhere();
     }
-function refreshUserPhotosInChat(){
-  const photoEl = document.getElementById("userPhoto");
-  const userSrc = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
-  if (!userSrc) return;
 
-  document.querySelectorAll(".msg.me .avatar.user").forEach(av => {
-    // si ya tiene img, actualiza src
-    const img = av.querySelector("img");
-    if (img){
-      img.src = userSrc;
-      return;
-    }
-    // si no tiene img, reemplaza contenido por img
-    av.innerHTML = `<img src="${escapeHtml(userSrc)}" alt="Usuario">`;
-  });
-}
     ["rbHead","rbEyes","rbMouth","rbAntenna","rbBody","rbPrimary","rbSecondary","rbGlow"].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener("change", syncRobot);

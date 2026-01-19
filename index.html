@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="favicon.ico" />
 
-  <!-- ✅ MSAL (Entra ID) - CDN oficial Microsoft -->
+  <!-- ✅ MSAL (Entra ID) -->
   <script src="./msal-browser.min.js"></script>
 
   <style>
@@ -109,17 +109,22 @@
     }
 
     main{
-      max-width:1280px;
+      max-width:1080px;
       margin:0 auto;
       padding:18px;
       height:calc(100vh - 72px);
       display:flex;
       flex-direction:column;
     }
+
+    /* ✅ 1 columna (sin sidebar) */
     .grid{
-      display:grid; grid-template-columns: 1fr 320px; gap:14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
       flex:1; min-height:0;
     }
+
     @media (max-width: 980px){
       body{overflow:auto; height:auto}
       main{height:auto}
@@ -190,12 +195,20 @@
       overflow:hidden;
     }
     .avatar.bot img{width:100%; height:100%; object-fit:cover}
+
+    /* ✅ Evitar desbordes por texto/URLs largos */
+    .bubble, .bubble p, .chat, .bubble a, .bubble li{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
     .bubble{
-      max-width:70%;
+      max-width:min(70%, 820px);
       border:1px solid var(--border);
       border-radius:14px;
       padding:10px 12px;
       background:#fff;
+      overflow:hidden;
     }
     .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .meta .tag{
@@ -234,6 +247,9 @@
       background:#fff;
       cursor:pointer;
       user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
     }
     .pill:hover{border-color:rgba(56,108,255,.45)}
     .pill.primary{background:rgba(56,108,255,.12); border-color:rgba(56,108,255,.35)}
@@ -257,7 +273,6 @@
     .disclosure summary::-webkit-details-marker{display:none;}
     .disclosure summary::after{content:"▾"; transition:transform .2s ease;}
     .disclosure[open] summary::after{transform:rotate(180deg);}
-    .useful-list{margin:10px 0 0 16px; color:var(--muted); font-size:12px;}
     a{color:#386cff}
     ul{margin:8px 0 0 18px; padding:0}
     li{margin:6px 0}
@@ -412,7 +427,6 @@
   </div>
 
   <div class="actions">
-    <!-- User chip (enterprise) -->
     <div class="chip" id="userChip" title="Usuario" style="display:none;">
       <img id="userPhoto" alt="foto" style="width:22px;height:22px;border-radius:8px;display:none;border:1px solid var(--border);object-fit:cover;">
       <span id="userInitials" style="width:22px;height:22px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--border);background:#fff;font-weight:900;font-size:11px;">U</span>
@@ -435,10 +449,8 @@
       <span id="modeHintText">Modo local</span>
     </div>
 
-    <!-- IMPORTANT: no onclick here (fix msal init race) -->
     <button class="btn" id="loginBtn">Iniciar sesión</button>
     <button class="btn ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
-
     <button class="btn ghost" id="cfgBtn">Configurar worker</button>
   </div>
 </header>
@@ -505,65 +517,47 @@
       <div class="chat" id="chat"></div>
 
       <div class="bd">
+        <details class="disclosure" style="margin-bottom:12px;">
+          <summary>Acciones rápidas</summary>
+
+          <div style="margin-top:10px;">
+            <div class="small" style="margin-bottom:8px;">
+              <b>Alcance de búsqueda</b>
+            </div>
+            <div class="pillRow">
+              <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
+              <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
+            </div>
+            <div class="small" id="scopeStatus" style="margin-top:8px">Buscando en: --</div>
+          </div>
+
+          <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
+
+          <div class="small"><b>Atajos</b></div>
+          <div class="kpi" style="margin-top:12px">
+            <div class="pill primary" id="q1">Reembolso en caja</div>
+            <div class="pill" id="q2">Preparación colonoscopía</div>
+            <div class="pill" id="q3">Copago Saludsa Masivos</div>
+            <div class="pill" id="q4">Política admisión</div>
+          </div>
+
+          <div class="hint" style="margin-top:12px;">
+            ✅ Tip útil: si necesitas exactitud, abre la fuente y valida “vigencia”/fecha del documento.
+          </div>
+        </details>
+
         <div class="inputRow">
           <textarea id="q" placeholder="Escribe tu consulta… (Enter para enviar, Shift+Enter para salto de línea)"></textarea>
           <button class="btn primary" id="sendBtn">Enviar</button>
         </div>
+
         <div class="small" style="margin-top:10px">
           Nexo responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara.
         </div>
+
+        <div class="small" id="whoami" style="margin-top:10px; opacity:.9"></div>
       </div>
     </section>
-
-    <aside class="card stack">
-      <div class="hd">
-        <h2>Atajos rápidos</h2>
-      </div>
-      <div class="bd">
-        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Alcance de búsqueda</h3>
-        <div class="pillRow">
-          <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
-          <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
-        </div>
-        <div class="small" id="scopeStatus" style="margin-top:8px">Buscando en: --</div>
-
-        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
-
-        <div class="small">Atajos (configurados por tu equipo):</div>
-        <div class="kpi" style="margin-top:12px">
-          <div class="pill primary" id="q1">Reembolso en caja</div>
-          <div class="pill" id="q2">Preparación colonoscopía</div>
-          <div class="pill" id="q3">Copago Saludsa Masivos</div>
-          <div class="pill" id="q4">Política admisión</div>
-        </div>
-
-        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
-
-        <details class="disclosure" open>
-          <summary>Momentos útiles</summary>
-          <div class="hint" style="margin-top:10px;">
-            ✅ <b>Checklist de turno:</b> verifica identificación, cobertura y copago antes de facturar.
-          </div>
-          <ul class="useful-list">
-            <li>Atajo: busca por “código + aseguradora” para respuestas más rápidas.</li>
-            <li>Siempre valida fecha de vigencia en la fuente citada.</li>
-            <li>Si hay dudas, pregunta por normativa vigente del seguro.</li>
-          </ul>
-        </details>
-
-        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
-
-        <h3 style="margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.25px; text-transform:uppercase">Sobre Nexo</h3>
-        <div class="small">
-          <b>Qué es:</b> una herramienta interna para consultar procedimientos, seguros y políticas con trazabilidad.<br><br>
-          <b>Qué no hace:</b> no inventa procesos ni reemplaza instructivos oficiales.<br><br>
-          <b>Fuentes:</b> siempre que sea posible, muestra enlaces al documento exacto.
-        </div>
-
-        <hr style="border:0;border-top:1px solid var(--border); margin:14px 0">
-        <div class="small" id="whoami" style="opacity:.9"></div>
-      </div>
-    </aside>
   </div>
 
   <footer>
@@ -645,12 +639,12 @@
   // App storage
   // ======================
   const LS_WORKER = "nexo_worker_url";
-  const LS_SCOPE = "nexo_scope";
-  const LS_AI = "nexo_ai_mode";
+  const LS_SCOPE  = "nexo_scope";
+  const LS_AI     = "nexo_ai_mode";
 
-  const DEFAULT_WORKER = "https://metrored-kb-bot.dbermeo.workers.dev";
-  const DEFAULT_SCOPE = "insurance";
-  const DEFAULT_AI = "0"; // local
+  const DEFAULT_WORKER = "https://nexo-worker.dbermeo.workers.dev";
+  const DEFAULT_SCOPE  = "insurance";
+  const DEFAULT_AI     = "0"; // local
 
   function getScope(){
     return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
@@ -715,9 +709,9 @@
 
   function refreshScopeUI(){
     const scope = getScope();
-    const internalBtn = document.getElementById("scopeInternal");
+    const internalBtn  = document.getElementById("scopeInternal");
     const insuranceBtn = document.getElementById("scopeInsurance");
-    const scopeLabel = document.getElementById("scopeStatus");
+    const scopeLabel   = document.getElementById("scopeStatus");
     if(!internalBtn || !insuranceBtn || !scopeLabel) return;
 
     internalBtn.classList.toggle("primary", scope === "internal");
@@ -764,7 +758,7 @@
       : `<div class="avatar bot">${botAvatarHtml}</div>`;
 
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-    const aiHtml = aiTag ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
     div.innerHTML = `
       ${avatar}
@@ -781,13 +775,13 @@
     const div = document.createElement("div");
     div.className = "msg bot";
     const srcHtml = (sources && sources.length)
-      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.08)">
+      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1)">
            <div class="meta">Fuentes</div>
            <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
          </div>`
       : "";
     const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-    const aiHtml = aiTag ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
     div.innerHTML = `
       <div class="avatar bot">${botAvatarHtml}</div>
@@ -800,12 +794,38 @@
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
+  // ======================
+  // Entra helpers
+  // ======================
+  function getTokenClaims(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    return (acc && acc.idTokenClaims) ? acc.idTokenClaims : null;
+  }
+
+  // ✅ Nombre para saludo (humano)
+  function getFirstName(){
+    const claims = getTokenClaims() || {};
+    const raw =
+      claims.given_name ||
+      (claims.name ? String(claims.name).split(" ")[0] : "") ||
+      (claims.preferred_username ? String(claims.preferred_username).split("@")[0] : "") ||
+      "";
+    const name = String(raw || "").trim();
+    if (!name) return null;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
   function clearChat(){
     chatEl.innerHTML = "";
+    const name = getFirstName();
+    const greet = name
+      ? `Hola, ${name}. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.`
+      : "Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.";
+
     addMsg(
       "bot",
       "Nexo",
-      "Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.",
+      greet,
       scopeLabelPretty(getScope()),
       getAI() ? "IA" : "Local"
     );
@@ -854,7 +874,7 @@
   }
 
   // ======================
-  // Entra helpers (user panel: name + role/area + photo)
+  // User panel: name + role/area + photo
   // ======================
   function safeInitials(nameOrEmail){
     const s = String(nameOrEmail || "").trim();
@@ -863,11 +883,6 @@
     const a = (parts[0] || "U")[0] || "U";
     const b = (parts[1] || "")[0] || "";
     return (a + b).toUpperCase();
-  }
-
-  function getTokenClaims(){
-    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-    return (acc && acc.idTokenClaims) ? acc.idTokenClaims : null;
   }
 
   function setUserUI({ name, email, tenantId, photoUrl, roleLine }){
@@ -1024,6 +1039,9 @@
       setStatus(true, "Autenticado");
       showApp();
       refreshUserProfileUI().catch(()=>{});
+
+      // ✅ refresca saludo con nombre cuando ya hay sesión
+      clearChat();
     } else {
       setStatus(false, "No autenticado");
       showLogin();

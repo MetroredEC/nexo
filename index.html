@@ -137,6 +137,25 @@
       main{height:auto}
       .grid{grid-template-columns:1fr}
     }
+    body.mobile-mode{
+      overflow:auto;
+      height:auto;
+    }
+    body.mobile-mode header{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+    body.mobile-mode .actions{
+      width:100%;
+      justify-content:flex-start;
+    }
+    body.mobile-mode main{
+      height:auto;
+      padding:12px;
+    }
+    body.mobile-mode .chat{
+      min-height:50vh;
+    }
     .card{
       background:rgba(255,255,255,.72);
       border:1px solid rgba(255,255,255,.7);
@@ -579,7 +598,7 @@
     }
     .quickGrid{
       display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap:12px;
     }
     @media (max-width: 720px){
@@ -716,7 +735,7 @@
   </div>
 </div>
 
-<div class="versionBadge" id="versionBadge">Versión: gh-pages</div>
+<div class="versionBadge" id="versionBadge">Versión: —</div>
 
 <main id="appMain">
   <div class="grid">
@@ -743,33 +762,14 @@
 
       <div class="bd">
         <details class="disclosure" style="margin-bottom:12px;">
-          <summary>Acciones rápidas</summary>
+          <summary>Preguntas frecuentes</summary>
 
           <div class="quickActions" style="margin-top:10px;">
             <div class="quickGrid">
               <div class="quickBlock">
-                <h4>Alcance de búsqueda</h4>
-                <div class="quickTools">
-                  <div class="pill" id="scopeInternal">Sistema de Gestión de la Calidad</div>
-                  <div class="pill" id="scopeInsurance">Procesos Aseguradoras</div>
-                </div>
-                <div class="quickHint" id="scopeStatus">Buscando en: --</div>
-              </div>
-
-              <div class="quickBlock">
-                <h4>Acciones rápidas (tu usuario)</h4>
+                <h4>Preguntas frecuentes</h4>
                 <div class="quickTools" id="userQuickActions"></div>
                 <div class="quickHint">Click = pega el texto en el chat (lo puedes editar antes de enviar).</div>
-              </div>
-
-              <div class="quickBlock">
-                <h4>Buenas prácticas</h4>
-                <div class="quickHint">
-                  ✅ Valida vigencia del documento y confirma fechas de actualización.
-                </div>
-                <div class="quickHint">
-                  🔎 Usa palabras clave clínicas y nombres de aseguradora para mayor precisión.
-                </div>
               </div>
             </div>
           </div>
@@ -825,6 +825,18 @@
             </div>
           </div>
           <button class="toggle" id="aiToggle" type="button" aria-pressed="false">
+            <span class="knob"></span>
+          </button>
+        </div>
+
+        <div class="toggleRow" style="margin-top:10px;">
+          <div class="toggleText">
+            <div class="toggleTitle">Modo mobile</div>
+            <div class="toggleDesc">
+              Ajusta el layout para pantallas pequeñas (útil si quieres simular vista móvil en desktop).
+            </div>
+          </div>
+          <button class="toggle" id="mobileToggle" type="button" aria-pressed="false">
             <span class="knob"></span>
           </button>
         </div>
@@ -952,6 +964,7 @@
   const ENTRA_TENANT_ID = "480bd49c-6f89-4faa-b39e-c7728d95d130";
   const ENTRA_CLIENT_ID = "7bcef56f-d3c5-4a94-a953-41f8c6b0fa54";
   const ENTRA_SCOPE = "api://66130291-fc50-43f1-943c-6818dac1ba99/basedeconocimiento";
+  const APP_BRANCH = "work";
 
   const msalInstance = new msal.PublicClientApplication({
     auth: {
@@ -968,19 +981,21 @@
   const LS_WORKER = "nexo_worker_url";
   const LS_SCOPE  = "nexo_scope";
   const LS_AI     = "nexo_ai_mode";
+  const LS_MOBILE = "nexo_mobile_mode";
 
   const DEFAULT_WORKER = "https://nexo-worker.dbermeo.workers.dev";
-  const DEFAULT_SCOPE  = "insurance";
+  const DEFAULT_SCOPE  = "all";
   const DEFAULT_AI     = "1"; // IA encendida por defecto
+  const DEFAULT_MOBILE = "0";
 
   // Microsoft 365 photo (se usa como avatar del usuario en el chat)
   let USER_PHOTO_URL = "";
 
   function getScope(){
-    return (localStorage.getItem(LS_SCOPE) || DEFAULT_SCOPE).trim();
+    return DEFAULT_SCOPE;
   }
-  function setScope(scope){
-    localStorage.setItem(LS_SCOPE, scope);
+  function setScope(){
+    localStorage.setItem(LS_SCOPE, DEFAULT_SCOPE);
     refreshScopeUI();
   }
 
@@ -994,6 +1009,17 @@
   }
   function toggleAI(){
     setAI(!getAI());
+  }
+
+  function getMobileMode(){
+    return localStorage.getItem(LS_MOBILE) === "1";
+  }
+  function setMobileMode(v){
+    localStorage.setItem(LS_MOBILE, v ? "1" : "0");
+    refreshMobileUI();
+  }
+  function toggleMobileMode(){
+    setMobileMode(!getMobileMode());
   }
 
   function getWorkerUrl(){
@@ -1012,10 +1038,10 @@
   const PREFS_DEFAULT = {
     version: 1,
     quickActions: [
-      { id: "qa_reembolso", label: "Reembolso en caja", text: "¿Cuál es el procedimiento para realizar un reembolso en caja?", scope: "internal" },
-      { id: "qa_colono", label: "Preparación colonoscopía", text: "¿Cómo debe venir preparado un paciente para una colonoscopía?", scope: "internal" },
-      { id: "qa_copago", label: "Copago Saludsa Masivos", text: "Copago Saludsa Masivos para consulta de medicina general", scope: "insurance" },
-      { id: "qa_admision", label: "Política admisión", text: "¿Qué políticas internas aplican para admisión de pacientes?", scope: "internal" }
+      { id: "qa_reembolso", label: "Reembolso en caja", text: "¿Cuál es el procedimiento para realizar un reembolso en caja?" },
+      { id: "qa_colono", label: "Preparación colonoscopía", text: "¿Cómo debe venir preparado un paciente para una colonoscopía?" },
+      { id: "qa_copago", label: "Copago Saludsa Masivos", text: "Copago Saludsa Masivos para consulta de medicina general" },
+      { id: "qa_admision", label: "Política admisión", text: "¿Qué políticas internas aplican para admisión de pacientes?" }
     ],
     // User avatar is fixed (no custom). Bot robot is customizable.
     userAvatar: { face: "rounded", eyes: "calm", mouth: "smile", color: "#5b6bff" },
@@ -1081,21 +1107,15 @@
   }
 
   function scopeLabelPretty(scope){
+    if (scope === "all") return "SGC + Aseguradoras";
     return scope === "internal" ? "SGC" : "Aseguradoras";
   }
 
   function refreshScopeUI(){
-    const scope = getScope();
-    const internalBtn  = document.getElementById("scopeInternal");
-    const insuranceBtn = document.getElementById("scopeInsurance");
-    const scopeLabel   = document.getElementById("scopeStatus");
-    if(!internalBtn || !insuranceBtn || !scopeLabel) return;
-
-    internalBtn.classList.toggle("primary", scope === "internal");
-    insuranceBtn.classList.toggle("primary", scope === "insurance");
-    scopeLabel.textContent = scope === "internal"
-      ? "Buscando en: Sistema de Gestión de la Calidad"
-      : "Buscando en: Procesos Aseguradoras";
+    const scopeLabel = document.getElementById("scopeStatus");
+    if(scopeLabel){
+      scopeLabel.textContent = "Buscando en: SGC + Aseguradoras";
+    }
 
     refreshHeaderBadges();
   }
@@ -1108,6 +1128,16 @@
     btn.setAttribute("aria-pressed", String(on));
   }
 
+  function refreshMobileUI(){
+    const btn = document.getElementById("mobileToggle");
+    const on = getMobileMode();
+    document.body.classList.toggle("mobile-mode", on);
+    if(btn){
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-pressed", String(on));
+    }
+  }
+
   function refreshHeaderBadges(){
     const scope = getScope();
     const ai = getAI();
@@ -1117,7 +1147,7 @@
     const modeHintText = document.getElementById("modeHintText");
 
     if(scopeBadge){
-      scopeBadge.textContent = scope === "internal" ? "SGC" : "Aseguradoras";
+      scopeBadge.textContent = scope === "all" ? "SGC + Aseguradoras" : (scope === "internal" ? "SGC" : "Aseguradoras");
     }
     if(aiBadge){
       aiBadge.classList.toggle("hidden", !ai);
@@ -1714,24 +1744,16 @@ function stripSourcesFromAnswer(answer){
     if (!wrap) return;
     wrap.innerHTML = "";
 
-    const list = (USER_PREFS && Array.isArray(USER_PREFS.quickActions)) ? USER_PREFS.quickActions : [];
-    if (!list.length){
-      const b = document.createElement("button");
-      b.className = "quickBtn";
-      b.type = "button";
-      b.textContent = "Personalizar…";
-      b.addEventListener("click", openPrefs);
-      wrap.appendChild(b);
-      return;
-    }
+    const list = (USER_PREFS && Array.isArray(USER_PREFS.quickActions) && USER_PREFS.quickActions.length)
+      ? USER_PREFS.quickActions
+      : (PREFS_DEFAULT.quickActions || []);
 
     for (const qa of list){
       const b = document.createElement("button");
       b.className = "quickBtn";
-      if (qa.scope === "insurance") b.classList.add("secondary");
       b.type = "button";
       b.textContent = qa.label || "Acción";
-      b.addEventListener("click", () => quick(qa.text || "", qa.scope || null));
+      b.addEventListener("click", () => quick(qa.text || ""));
       wrap.appendChild(b);
     }
   }
@@ -1790,17 +1812,10 @@ function stripSourcesFromAnswer(answer){
       card.style.gap = "10px";
 
       card.innerHTML = `
-        <div class="row" style="grid-template-columns: 1fr 1fr;">
+        <div class="row" style="grid-template-columns: 1fr;">
           <div>
             <label>Título</label>
             <input data-idx="${idx}" data-field="label" value="${escapeHtml(qa.label || "")}" />
-          </div>
-          <div>
-            <label>Alcance</label>
-            <select data-idx="${idx}" data-field="scope" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
-              <option value="internal">SGC</option>
-              <option value="insurance">Aseguradoras</option>
-            </select>
           </div>
           <div style="grid-column:1 / -1;">
             <label>Texto</label>
@@ -1820,10 +1835,7 @@ function stripSourcesFromAnswer(answer){
       const ta = card.querySelector("textarea[data-field='text']");
       ta.value = qa.text || "";
 
-      const sel = card.querySelector("select[data-field='scope']");
-      sel.value = (qa.scope === "insurance") ? "insurance" : "internal";
-
-      card.querySelectorAll("input,textarea,select").forEach(el => {
+      card.querySelectorAll("input,textarea").forEach(el => {
         el.addEventListener("input", (e) => {
           const i = Number(e.target.dataset.idx);
           const f = e.target.dataset.field;
@@ -1861,7 +1873,7 @@ function stripSourcesFromAnswer(answer){
           }
           if (act === "use"){
             const qa = USER_PREFS.quickActions[i];
-            quick(qa.text || "", qa.scope || null);
+            quick(qa.text || "");
             closePrefs();
           }
         });
@@ -2015,8 +2027,8 @@ addBotHtml(
     }
   }
 
-  function quick(text, scope){
-    if(scope) setScope(scope);
+  function quick(text){
+    setScope();
     const el = document.getElementById("q");
     el.value = text;
     el.focus();
@@ -2039,6 +2051,7 @@ addBotHtml(
     document.getElementById("saveCfgBtn").addEventListener("click", saveConfig);
 
     document.getElementById("aiToggle").addEventListener("click", toggleAI);
+    document.getElementById("mobileToggle").addEventListener("click", toggleMobileMode);
 
     document.getElementById("clearBtn").addEventListener("click", clearChat);
     document.getElementById("forceLocalBtn").addEventListener("click", forceLocalMode);
@@ -2046,9 +2059,6 @@ addBotHtml(
 
     document.getElementById("sendBtn").addEventListener("click", send);
     document.getElementById("q").addEventListener("keydown", handleKey);
-
-    document.getElementById("scopeInternal").addEventListener("click", ()=>setScope("internal"));
-    document.getElementById("scopeInsurance").addEventListener("click", ()=>setScope("insurance"));
 
     // preferences
     document.getElementById("prefsBtn").addEventListener("click", openPrefs);
@@ -2061,7 +2071,7 @@ addBotHtml(
     document.getElementById("qaAddBtn").addEventListener("click", ()=>{
       if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
       const id = "qa_" + Math.random().toString(36).slice(2, 10);
-      USER_PREFS.quickActions.push({ id, label: "Nueva acción", text: "Escribe aquí...", scope: getScope() });
+      USER_PREFS.quickActions.push({ id, label: "Nueva acción", text: "Escribe aquí..." });
       renderPrefsModal();
     });
   }
@@ -2075,11 +2085,19 @@ addBotHtml(
   if(localStorage.getItem(LS_AI) == null){
     localStorage.setItem(LS_AI, DEFAULT_AI);
   }
+  if(localStorage.getItem(LS_MOBILE) == null){
+    localStorage.setItem(LS_MOBILE, DEFAULT_MOBILE);
+  }
   if(!localStorage.getItem(LS_WORKER)){
     localStorage.setItem(LS_WORKER, DEFAULT_WORKER);
   }
   refreshAIUI();
+  refreshMobileUI();
   refreshHeaderBadges();
+  const versionBadge = document.getElementById("versionBadge");
+  if(versionBadge){
+    versionBadge.textContent = `Versión: ${APP_BRANCH}`;
+  }
   clearChat();
 
   authInit().catch(()=>{});

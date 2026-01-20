@@ -556,6 +556,21 @@
       text-decoration:none;
       border-bottom:1px solid rgba(100,116,139,.35);
     }
+    .versionBadge{
+      position:fixed;
+      left:14px;
+      bottom:14px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--glass-border);
+      background:rgba(255,255,255,.75);
+      color:#475569;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.2px;
+      box-shadow:var(--shadow-soft);
+      z-index:10;
+    }
 
     /* ===== Quick actions ===== */
     .quickActions{
@@ -700,6 +715,8 @@
     </div>
   </div>
 </div>
+
+<div class="versionBadge" id="versionBadge">Versión: gh-pages</div>
 
 <main id="appMain">
   <div class="grid">

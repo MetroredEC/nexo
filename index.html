@@ -1494,70 +1494,29 @@ function stripSourcesFromAnswer(answer){
   
 
   // ===== Pending / thinking bubble =====
-  function addBotThinking(title, metaTag, aiTag){
-    const div = document.createElement('div');
-    div.className = 'msg bot pending';
+  function addBotThinking(title, metaTag, aiTag) {
+  const div = document.createElement("div");
+  div.className = "msg bot pending";
 
-    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : '';
-    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : '';
+  const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+  const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
 
-    div.innerHTML = `
-      <div class="avatar bot">${robotSvg(currentRobot())}</div>
-      <div class="bubble">
-        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
-        <div class="md">${bodyHtml}</div>
-        ${srcHtml}
-        ${fbHtml}
-      </div>`;
+  div.innerHTML = `
+    <div class="avatar bot">${robotSvg(currentRobot())}</div>
+    <div class="bubble">
+      <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
+      <div class="thinkingRow">
+        <span class="typingDots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="thinkingText" data-thinking-text>Pensando…</span>
+      </div>
+      <div class="thinkingSub" data-thinking-sub></div>
+    </div>
+  `;
 
-    chatEl.appendChild(div);
-    chatEl.scrollTop = chatEl.scrollHeight;
-    return div;
-  }
-
-  function setThinking(div, text, sub){
-    try{
-      const t = div.querySelector('[data-thinking-text]');
-      if (t) t.textContent = text || 'Pensando…';
-      const s = div.querySelector('[data-thinking-sub]');
-      if (s) s.textContent = sub || '';
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }catch(_){ }
-  }
-function addBotHtml(title, answer, sources, metaTag, aiTag, extra){
-    const div = document.createElement("div");
-    div.className = "msg bot";
-
-    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
-
-    const bodyHtml = renderMarkdownLite(answer || "Sin respuesta");
-
-    const srcHtml = (sources && sources.length)
-      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1)">
-           <div class="meta">Fuentes</div>
-           <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
-         </div>`
-      : "";
-
-    const fbHtml = (extra && extra.rid)
-      ? `<div class="fbRow" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1); display:flex; gap:8px; align-items:center;">
-           <span class="meta" style="margin-right:auto">¿Esto te sirvió?</span>
-           <button class="fbBtn" data-v="1" title="Útil">👍</button>
-           <button class="fbBtn" data-v="-1" title="No útil">👎</button>
-         </div>`
-      : "";
-
-    div.innerHTML = `
-      <div class="avatar bot">${robotSvg(currentRobot())}</div>
-      <div class="bubble">
-        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
-        <div class="md">${bodyHtml}</div>
-        ${srcHtml}
-        ${fbHtml}
-      </div>`;
-
-    chatEl.appendChild(div);
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
 
     // Feedback (mejora continua): 👍/👎
     try {

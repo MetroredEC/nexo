@@ -1505,11 +1505,9 @@ function stripSourcesFromAnswer(answer){
       <div class="avatar bot">${robotSvg(currentRobot())}</div>
       <div class="bubble">
         <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
-        <div class="thinkingRow">
-          <span class="typingDots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="thinkingText" data-thinking-text>Pensando…</span>
-        </div>
-        <div class="thinkingSub" data-thinking-sub> </div>
+        <div class="md">${bodyHtml}</div>
+        ${srcHtml}
+        ${fbHtml}
       </div>`;
 
     chatEl.appendChild(div);
@@ -1526,7 +1524,7 @@ function stripSourcesFromAnswer(answer){
       chatEl.scrollTop = chatEl.scrollHeight;
     }catch(_){ }
   }
-function addBotHtml(title, answer, sources, metaTag, aiTag){
+function addBotHtml(title, answer, sources, metaTag, aiTag, extra){
     const div = document.createElement("div");
     div.className = "msg bot";
 
@@ -1542,15 +1540,40 @@ function addBotHtml(title, answer, sources, metaTag, aiTag){
          </div>`
       : "";
 
+    const fbHtml = (extra && extra.rid)
+      ? `<div class="fbRow" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1); display:flex; gap:8px; align-items:center;">
+           <span class="meta" style="margin-right:auto">¿Esto te sirvió?</span>
+           <button class="fbBtn" data-v="1" title="Útil">👍</button>
+           <button class="fbBtn" data-v="-1" title="No útil">👎</button>
+         </div>`
+      : "";
+
     div.innerHTML = `
       <div class="avatar bot">${robotSvg(currentRobot())}</div>
       <div class="bubble">
         <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
         <div class="md">${bodyHtml}</div>
         ${srcHtml}
+        ${fbHtml}
       </div>`;
 
     chatEl.appendChild(div);
+
+    // Feedback (mejora continua): 👍/👎
+    try {
+      if (extra && extra.rid) {
+        const btns = div.querySelectorAll(".fbBtn");
+        btns.forEach((b) => {
+          b.addEventListener("click", async () => {
+            const rating = Number(b.getAttribute("data-v"));
+            const reason = window.prompt(rating === 1 ? "¿Qué fue útil? (opcional)" : "¿Qué falló? (opcional)") || "";
+            await sendFeedback(extra, rating, reason);
+            const row = b.closest(".fbRow");
+            if (row) row.innerHTML = '<span class="meta">Gracias. Feedback registrado.</span>';
+          });
+        });
+      }
+    } catch (_) {}
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
@@ -2128,6 +2151,41 @@ function addBotHtml(title, answer, sources, metaTag, aiTag){
     }
   }
 
+
+  function detectIntentClient(question){
+    const q = String(question||"").toLowerCase();
+    if(q.includes("copago") || q.includes("co-pago")) return {type:"copago"};
+    if(q.includes("factur") || q.includes("facturación") || q.includes("facturacion") || q.includes("caja") || q.includes("liquid")) return {type:"facturacion"};
+    if(q.includes("colonoscop") || q.includes("endoscop") || q.includes("tomograf") || q.includes("mamograf") || q.includes("ergometr") || q.includes("espirom") || q.includes("prepar") || q.includes("ayuno") || q.includes("indicacion")) return {type:"preparacion"};
+    if(q.includes("grabación") || q.includes("grabacion") || q.includes("reunión") || q.includes("reunion") || q.includes("mp4") || q.includes("video")) return {type:"video"};
+    return {type:"general"};
+  }
+
+  async function sendFeedback(extra, rating, reason){
+    try{
+      const worker = getWorkerUrl();
+      const token = await getAccessToken();
+      const payload = {
+        rid: extra?.rid || "",
+        rating,
+        reason: String(reason||"").slice(0,180),
+        question: extra?.question || "",
+        queryUsed: extra?.queryUsed || "",
+        intent: extra?.intent || detectIntentClient(extra?.question || ""),
+        sources: extra?.sources || []
+      };
+      await fetch(worker + "/feedback", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+    }catch(e){
+      console.warn("Feedback falló", e);
+    }
+  }
   async function send(){
     hideAiBanner();
 

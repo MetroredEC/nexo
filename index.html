@@ -1,396 +1,2042 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nexo Chat</title>
-  <!-- MSAL library for Azure AD authentication -->
-  <script defer src="https://alcdn.msauth.net/browser/2.31.0/js/msal-browser.min.js"></script>
+  <meta charset="utf-8" />
+  <title>Nexo | Metrored</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon.ico" />
+
+  <!-- ✅ MSAL (Entra ID) -->
+  <script src="./msal-browser.min.js"></script>
+
   <style>
-    /* Basic styling for the chat interface */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f5f5f5;
-      color: #333;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+    :root{
+      --bg:#f4f6fb;
+      --panel:#ffffff;
+      --panel2:#f5f7ff;
+      --border:rgba(148,163,184,.35);
+      --muted:#64748b;
+      --text:#111827;
+      --brand:#0a84ff;
+      --brand-2:#5b6bff;
+      --glass:rgba(255,255,255,.62);
+      --glass-strong:rgba(255,255,255,.78);
+      --glass-border:rgba(255,255,255,.5);
+      --danger:#e5484d;
+      --ok:#22c55e;
+      --warm:#f6b26b;
+      --shadow:0 24px 60px rgba(15,23,42,.12);
+      --shadow-soft:0 16px 30px rgba(15,23,42,.08);
     }
-    header {
-      background-color: #007b83;
-      color: white;
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 520px at 6% -10%, rgba(90,125,255,.22) 0%, transparent 62%),
+        radial-gradient(820px 420px at 95% 10%, rgba(153,120,255,.2) 0%, transparent 58%),
+        var(--bg);
+      color:var(--text);
+      height:100vh;
+      overflow:hidden;
     }
-    header h1 {
-      margin: 0;
-      font-size: 1.2rem;
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; padding:14px 20px;
+      border-bottom:1px solid var(--glass-border);
+      background:linear-gradient(180deg, rgba(255,255,255,.78), rgba(248,250,255,.55));
+      position:sticky; top:0; z-index:5;
+      backdrop-filter: blur(18px);
     }
-    header .actions button {
-      margin-left: 0.5rem;
-      padding: 0.4rem 0.7rem;
-      font-size: 0.9rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    .brand{display:flex; align-items:center; gap:14px;}
+    .nexo-logo{
+      width:40px; height:40px; border-radius:14px;
+      display:grid; place-items:center;
+      background:linear-gradient(135deg, rgba(10,132,255,.24), rgba(91,107,255,.24));
+      border:1px solid rgba(255,255,255,.5);
+      overflow:hidden;
     }
-    header .actions button.signIn {
-      background-color: #04a9c1;
-      color: white;
+    .nexo-logo img{width:100%; height:100%; object-fit:cover}
+    .nexo-logo svg{width:100%; height:100%; display:block}
+    .title{display:flex; flex-direction:column; line-height:1.1}
+    .title h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.4px; display:flex; gap:8px; align-items:center;}
+    .title span{font-size:12px; color:var(--muted)}
+    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .chip{
+      font-size:12px; padding:6px 10px; border-radius:999px;
+      border:1px solid var(--glass-border); color:var(--muted);
+      background:var(--glass);
+      backdrop-filter: blur(12px);
+      display:flex; gap:8px; align-items:center;
     }
-    header .actions button.signOut {
-      background-color: #d63384;
-      color: white;
+    .chip .pulse{position:relative;}
+    .chip .pulse::after{
+      content:"";
+      position:absolute; inset:-4px;
+      border-radius:50%;
+      border:1px solid rgba(56,108,255,.35);
+      animation:pulse 1.8s ease-out infinite;
     }
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    .dot{width:8px; height:8px; border-radius:50%;}
+    .btn{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:var(--glass-strong); color:var(--text); cursor:pointer;
+      font-weight:700;
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(12px);
     }
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-      background-color: #fff;
+    .btn.primary{background:var(--brand); color:#fff; border-color:transparent;}
+    .btn.ghost{background:transparent; box-shadow:none;}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(56,108,255,.25);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:900;
+      letter-spacing:.2px;
     }
-    .msg {
-      margin-bottom: 1rem;
-      display: flex;
+    .badge.ai{
+      border-color: rgba(106,92,255,.35);
+      background: rgba(106,92,255,.10);
+      color:#5a4cff;
     }
-    .msg.bot {
-      justify-content: flex-start;
-    }
-    .msg.user {
-      justify-content: flex-end;
-    }
-    .msg .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background-color: #007b83;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      margin-right: 0.5rem;
-    }
-    .msg.user .avatar {
-      background-color: #d63384;
-      margin-left: 0.5rem;
-      margin-right: 0;
-    }
-    .msg .bubble {
-      max-width: 70%;
-      background-color: #eef8f9;
-      border-radius: 8px;
-      padding: 0.6rem 0.9rem;
-      line-height: 1.4;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      font-size: 0.95rem;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-    .msg.user .bubble {
-      background-color: #f0e7f4;
-    }
-    .bubble .meta {
-      font-size: 0.75rem;
-      color: #666;
-      margin-bottom: 0.3rem;
-    }
-    .bubble .sources {
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-    }
-    .sources a {
-      color: #007b83;
-      text-decoration: none;
-    }
-    .sources a:hover {
-      text-decoration: underline;
-    }
-    #inputArea {
-      display: flex;
-      padding: 0.7rem;
-      background-color: #f8f9fa;
-      border-top: 1px solid #ddd;
-    }
-    #inputArea input {
-      flex: 1;
-      padding: 0.5rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    #inputArea button {
-      margin-left: 0.5rem;
-      padding: 0.6rem 1rem;
-      font-size: 1rem;
-      background-color: #007b83;
-      border: none;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
+    .badge.hidden{display:none;}
+    .microHint{
+      font-size:12px; color:var(--muted);
+      padding:8px 10px;
+      border:1px dashed rgba(148,163,184,.4);
+      background:var(--glass);
+      border-radius:12px;
+      box-shadow:var(--shadow-soft);
+      display:flex; gap:8px; align-items:center;
     }
 
-    /* Thinking dots and animation */
-    .thinkingRow {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 6px;
-      opacity: 0.95;
+    main{
+      max-width:1080px;
+      margin:0 auto;
+      padding:18px;
+      height:calc(100vh - 72px);
+      display:flex;
+      flex-direction:column;
     }
-    .typingDots {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      height: 12px;
+
+    /* ✅ 1 columna (sin sidebar) */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      flex:1; min-height:0;
     }
-    .typingDots i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      display: inline-block;
-      opacity: 0.35;
-      animation: typingDot 1.2s infinite ease-in-out;
+
+    @media (max-width: 980px){
+      body{overflow:auto; height:auto}
+      main{height:auto}
+      .grid{grid-template-columns:1fr}
     }
-    .typingDots i:nth-child(2) { animation-delay: 0.15s; }
-    .typingDots i:nth-child(3) { animation-delay: 0.30s; }
-    @keyframes typingDot {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
-      40% { transform: translateY(-4px); opacity: 1; }
+    .card{
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(16px);
     }
-    .plainAnswer {
-      white-space: pre-wrap;
-      margin: 8px 0 0 0;
+    .card.stack{display:flex; flex-direction:column; min-height:0;}
+    .card .hd{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.6);
+      display:flex; justify-content:space-between; align-items:center;
+      background:rgba(255,255,255,.7);
+      backdrop-filter: blur(16px);
     }
+    .card .hd h2{margin:0; font-size:13px; letter-spacing:.25px; color:var(--muted); font-weight:800; text-transform:uppercase}
+    .card .bd{padding:14px}
+    .chat{
+      flex:1; min-height:0; overflow:auto; padding:18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.75), rgba(235,239,246,.9)),
+        url("background-login.svg") center/cover no-repeat;
+    }
+
+    /* ===== Banner “honesto” ===== */
+    .banner{
+      display:none;
+      margin:12px 14px 0 14px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(246,178,107,.45);
+      background: rgba(246,178,107,.18);
+      color:#8a5a20;
+      font-size:12px;
+      box-shadow:0 6px 16px rgba(15,23,42,.05);
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .banner strong{font-weight:900}
+    .banner .right{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    .banner .mini{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(246,178,107,.55);
+      background:#fff;
+      cursor:pointer;
+      font-weight:900;
+      color:#8a5a20;
+      box-shadow:none;
+      font-size:12px;
+    }
+    .banner .mini.secondary{
+      border-color:rgba(226,232,240,1);
+      color:var(--muted);
+    }
+
+    .msg{margin:0 0 16px 0; display:flex; gap:10px; align-items:flex-start;}
+    .msg.me{justify-content:flex-end;}
+    .avatar{
+      width:34px; height:34px; border-radius:12px;
+      display:grid; place-items:center; font-weight:900; font-size:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      flex:0 0 auto;
+      overflow:hidden;
+    }
+    .avatar.bot img{width:100%; height:100%; object-fit:cover}
+    .avatar.user img{width:100%; height:100%; object-fit:cover; border-radius:12px; display:block;}
+
+    /* ✅ Evitar desbordes por texto/URLs largos */
+    .bubble, .bubble p, .chat, .bubble a, .bubble li{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
+    .bubble{
+      max-width:min(70%, 820px);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.9);
+      overflow:hidden;
+    }
+    .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .meta .tag{
+      font-size:11px; padding:3px 8px; border-radius:999px;
+      border:1px solid rgba(56,108,255,.2);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:800;
+    }
+    .meta .tag.ai{
+      border-color: rgba(106,92,255,.3);
+      background: rgba(106,92,255,.10);
+      color:#5a4cff;
+    }
+    .bubble p{margin:0; white-space:pre-wrap; line-height:1.4}
+    .me .avatar{background:rgba(56,108,255,.14); border-color:rgba(56,108,255,.35)}
+    .me .meta{color:#386cff}
+    .me .bubble{background:rgba(56,108,255,.08); border-color:rgba(56,108,255,.24);}
+    .bot .avatar{background:rgba(106,92,255,.12); border-color:rgba(106,92,255,.28)}
+    .inputRow{display:flex; gap:10px; margin-top:12px}
+    textarea{
+      flex:1; resize:none; padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--glass-border);
+      background:var(--glass-strong);
+      color:var(--text);
+      min-height:46px;
+      outline:none;
+    }
+    textarea:focus{border-color:rgba(56,108,255,.45)}
+    .small{font-size:12px; color:var(--muted); line-height:1.35}
+    .kpi{display:flex; flex-wrap:wrap; gap:8px}
+    .pill{
+      font-size:12px; padding:10px 12px; border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .pill:hover{border-color:rgba(56,108,255,.45)}
+    .pill.primary{background:rgba(56,108,255,.12); border-color:rgba(56,108,255,.35)}
+    .pillRow{display:flex; gap:8px; flex-wrap:wrap}
+    .hint{
+      padding:10px 12px; border-radius:12px; border:1px solid rgba(255,210,138,.25);
+      background:rgba(255,210,138,.18); color:#8a5a20; font-size:12px;
+    }
+    .disclosure{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      padding:10px 12px;
+    }
+    .disclosure summary{
+      cursor:pointer;
+      list-style:none;
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:12px; color:var(--muted); font-weight:800; text-transform:uppercase;
+    }
+    .disclosure summary::-webkit-details-marker{display:none;}
+    .disclosure summary::after{content:"▾"; transition:transform .2s ease;}
+    .disclosure[open] summary::after{transform:rotate(180deg);}
+    a{color:#386cff}
+    ul{margin:8px 0 0 18px; padding:0}
+    li{margin:6px 0}
+    footer{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
+
+    /* Modal */
+    .modalBackdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.6);
+      display:none; align-items:center; justify-content:center; z-index:50;
+      padding:18px;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,247,251,.98));
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow: 0 20px 60px rgba(15,23,42,.18);
+      /* Fix: modal content should scroll inside, not overflow off-screen */
+      max-height: calc(100vh - 56px);
+      display:flex;
+      flex-direction:column;
+    }
+    .modalHd{
+      padding:14px 16px; border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modalHd h3{margin:0; font-size:14px; letter-spacing:.25px; color:var(--muted); text-transform:uppercase}
+    .modalBd{
+      padding:16px;
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px; font-weight:800}
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+    input:focus{border-color:rgba(56,108,255,.45)}
+    .modalFt{padding:14px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px}
+    .err{color:var(--danger)}
+    .ok{color:var(--ok)}
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    @keyframes pulse{
+      0%{transform:scale(.7); opacity:.8}
+      100%{transform:scale(1.6); opacity:0}
+    }
+
+    /* ===== Toggle corporativo (Modo IA) ===== */
+    .toggleRow{
+      margin-top:10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(15,23,42,.06);
+    }
+    .toggleText{flex:1}
+    .toggleTitle{font-weight:900; font-size:13px; margin-bottom:4px;}
+    .toggleDesc{font-size:12px; color:var(--muted); line-height:1.35;}
+    .toggle{
+      width:44px; height:26px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(31,41,55,.08);
+      position:relative;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .toggle .knob{
+      width:20px; height:20px;
+      border-radius:50%;
+      background:#fff;
+      border:1px solid var(--border);
+      position:absolute;
+      top:2px; left:2px;
+      transition:transform .16s ease;
+      box-shadow:0 6px 14px rgba(15,23,42,.12);
+    }
+    .toggle.on{
+      background:rgba(106,92,255,.18);
+      border-color:rgba(106,92,255,.35);
+    }
+    .toggle.on .knob{ transform:translateX(18px); }
+
+    /* ===== Login screen ===== */
+    .loginWrap{
+      height:100vh;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      position:relative;
+      overflow:hidden;
+      background: #e9ecf4 url("background-login.svg") center/cover no-repeat;
+    }
+    .loginWrap::before{
+      content:"";
+      position:absolute;
+      inset:-20% 0 35% 0;
+      background:
+        radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.95), rgba(230,235,246,.7) 60%, transparent 100%),
+        linear-gradient(180deg, rgba(255,255,255,.85), rgba(226,232,242,.7));
+      z-index:0;
+    }
+    .loginWrap::after{
+      content:"";
+      position:absolute;
+      left:-10%;
+      right:-10%;
+      bottom:-10%;
+      height:55%;
+      background:
+        radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,.82) 0%, rgba(214,221,233,.55) 45%, transparent 80%),
+        linear-gradient(180deg, rgba(210,217,230,.35), rgba(255,255,255,.95));
+      filter: blur(2px);
+      z-index:0;
+    }
+    .loginCard{
+      width:min(720px, 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      gap:18px;
+      position:relative;
+      z-index:1;
+    }
+    .loginBrandMark{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+    .loginBrandLogos{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .loginBrandMark .nexo-logo{
+      width:64px;
+      height:64px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.7);
+      background:linear-gradient(135deg, rgba(10,132,255,.18), rgba(91,107,255,.2));
+      box-shadow:0 18px 40px rgba(15,23,42,.12);
+    }
+    .loginMetro{
+      width:160px;
+      height:160px;
+      border-radius:32px;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      display:grid;
+      place-items:center;
+      padding:0;
+    }
+    .loginMetro img{
+      width:150%;
+      height:150%;
+      object-fit:contain;
+      filter: drop-shadow(0 18px 40px rgba(15,23,42,.18));
+    }
+    .loginBrandTitle{
+      font-size:34px;
+      font-weight:800;
+      letter-spacing:.4px;
+      margin:0;
+    }
+    .loginBrandSubtitle{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:rgba(71,85,105,.7);
+      margin:0;
+    }
+    .loginTitle{
+      font-size:28px;
+      font-weight:700;
+      margin:6px 0 0;
+      color:#1f2937;
+    }
+    .loginSubtitle{
+      font-size:14px;
+      color:var(--muted);
+      margin:0;
+    }
+    .loginPanel{
+      width:min(560px, 100%);
+      padding:18px;
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:22px;
+      box-shadow:0 24px 60px rgba(15,23,42,.14);
+      backdrop-filter: blur(18px);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+    .loginPrimary{
+      width:100%;
+      font-size:16px;
+      padding:14px 16px;
+      border-radius:16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      box-shadow:0 16px 32px rgba(15,23,42,.12);
+      background:rgba(255,255,255,.92);
+      text-align:center;
+    }
+    .msBadge{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+      color:#374151;
+    }
+    .msLogo{
+      width:22px;
+      height:22px;
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:2px;
+    }
+    .msLogo span{
+      display:block;
+      width:10px;
+      height:10px;
+      border-radius:2px;
+    }
+    .msLogo span:nth-child(1){background:#f25022;}
+    .msLogo span:nth-child(2){background:#7fba00;}
+    .msLogo span:nth-child(3){background:#00a4ef;}
+    .msLogo span:nth-child(4){background:#ffb900;}
+    .loginSecondary{
+      background:transparent;
+      border:none;
+      color:#6b7280;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .loginNote{
+      font-size:12px;
+      color:#94a3b8;
+    }
+    .loginLegal{
+      font-size:12px;
+      color:#94a3b8;
+    }
+    .loginLegal a{
+      color:#64748b;
+      text-decoration:none;
+      border-bottom:1px solid rgba(100,116,139,.35);
+    }
+    .versionBadge{
+      position:fixed;
+      left:14px;
+      bottom:14px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--glass-border);
+      background:rgba(255,255,255,.75);
+      color:#475569;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.2px;
+      box-shadow:var(--shadow-soft);
+      z-index:10;
+    }
+
+    /* ===== Quick actions ===== */
+    .quickActions{
+      display:grid;
+      gap:14px;
+    }
+    .quickGrid{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 720px){
+      .quickGrid{grid-template-columns:1fr}
+    }
+    .quickBlock{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .quickBlock h4{
+      margin:0;
+      font-size:12px;
+      letter-spacing:.2px;
+      color:#475569;
+      text-transform:uppercase;
+      font-weight:900;
+    }
+    .quickHint{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .quickTools{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .quickBtn{
+      border-radius:12px;
+      border:1px solid rgba(56,108,255,.18);
+      background:rgba(56,108,255,.08);
+      color:#2f57d6;
+      font-weight:800;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .quickBtn.secondary{
+      background:rgba(106,92,255,.08);
+      border-color:rgba(106,92,255,.2);
+      color:#5a4cff;
+    }
+    .quickBtn:hover{
+      border-color:rgba(56,108,255,.45);
+    }
+
+    /* hide app until auth */
+    #appMain{display:none;}
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>Nexo</h1>
-    <div class="actions">
-      <button id="signInBtn" class="signIn">Iniciar sesión</button>
-      <button id="signOutBtn" class="signOut" style="display:none">Cerrar sesión</button>
+<header id="appHeader">
+  <div class="brand">
+    <div class="nexo-logo" id="headerRobot" aria-label="Robot Nexo" title="Robot Nexo"></div>
+    <div class="title">
+      <h1>
+        Nexo
+        <span class="badge" id="scopeBadge">—</span>
+        <span class="badge ai hidden" id="aiBadge">IA</span>
+      </h1>
+      <span>Asistente Inteligente de Conocimiento Metrored</span>
     </div>
-  </header>
-  <main>
-    <div id="chat"></div>
-    <div id="inputArea" style="display:none">
-      <input type="text" id="messageInput" placeholder="Escribe tu pregunta…" autocomplete="off" />
-      <button id="sendBtn">Enviar</button>
+  </div>
+
+  <div class="actions">
+    <div class="chip" id="userChip" title="Usuario" style="display:none;">
+      <img id="userPhoto" alt="foto" style="width:22px;height:22px;border-radius:8px;display:none;border:1px solid var(--border);object-fit:cover;">
+      <span id="userInitials" style="width:22px;height:22px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--border);background:#fff;font-weight:900;font-size:11px;">U</span>
+
+      <span style="display:flex; flex-direction:column; line-height:1.1;">
+        <span id="userName" style="font-weight:900;">—</span>
+        <span id="userRole" style="font-weight:700; font-size:11px; color:var(--muted);">—</span>
+      </span>
+
+      <span class="badge" id="verifiedBadge" style="margin-left:6px;">Verificado</span>
     </div>
-  </main>
 
-  <script>
-    // Configuration: replace with your Azure AD app details
-    const msalConfig = {
-      auth: {
-        clientId: "66130291-fc50-43f1-943c-6818dac1ba99", //
-        authority: "https://login.microsoftonline.com/common",
-        redirectUri: window.location.href
-      }
-    };
+    <div class="chip" id="statusChip" title="Estado de sesión">
+      <span class="dot pulse" id="statusDot" style="background:var(--danger)"></span>
+      <span id="statusText">No autenticado</span>
+    </div>
 
-    const msalInstance = new msal.PublicClientApplication(msalConfig);
-    let account = null;
+    <div class="microHint" id="modeHint" title="Modo actual">
+      <span>⚙️</span>
+      <span id="modeHintText">Modo local</span>
+    </div>
 
-    // Utility to escape HTML to prevent XSS
-    function escapeHtml(str) {
-      return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+    <button class="btn" id="loginBtn">Iniciar sesión</button>
+    <button class="btn ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
+    <button class="btn" id="prefsBtn" style="display:none">Personalizar</button>
+    <button class="btn ghost" id="cfgBtn">Configurar worker</button>
+  </div>
+</header>
 
-    // UI helpers for thinking bubbles
-    function addBotThinking(title = "Nexo", metaTag = "", aiTag = "IA") {
-      const chatEl = document.getElementById("chat");
-      const div = document.createElement("div");
-      div.className = "msg bot pending";
-      const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
-      const aiHtml  = aiTag ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
-      div.innerHTML = `
-        <div class="avatar bot">🤖</div>
-        <div class="bubble">
-          <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
-          <div class="thinkingRow">
-            <span class="typingDots"><i></i><i></i><i></i></span>
-            <span class="thinkingText" data-thinking-text>Pensando…</span>
+<!-- ===== Login Screen ===== -->
+<div class="loginWrap" id="loginWrap">
+  <div class="loginCard">
+    <div class="loginBrandMark">
+      <div class="loginBrandLogos">
+        <div class="loginMetro" aria-hidden="true">
+          <img src="logo.png" alt="Metrored" />
+        </div>
+      </div>
+      <h2 class="loginBrandTitle">Nexo</h2>
+      <p class="loginBrandSubtitle">Asistente de Conocimiento Metrored</p>
+    </div>
+
+    <h3 class="loginTitle">Bienvenido de nuevo</h3>
+    <p class="loginSubtitle">Inicia sesión en tu cuenta corporativa.</p>
+
+    <div class="loginPanel">
+      <button class="btn loginPrimary" id="loginBtn2" type="button">
+        <span class="msBadge">
+          <span class="msLogo">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          Iniciar sesión con Microsoft 365
+        </span>
+      </button>
+
+      <button class="loginSecondary" id="openCfgBtn2" type="button">Configurar Worker</button>
+      <div class="loginNote">Sesión exclusiva por Microsoft 365.</div>
+      <div class="loginLegal">
+        Al continuar, aceptas nuestros <a href="#">Términos y Condiciones</a> y
+        <a href="#">Política de privacidad</a>.
+      </div>
+      <div class="tiny" id="loginMsg" style="margin-top:6px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="versionBadge" id="versionBadge">Versión: gh-pages</div>
+
+<main id="appMain">
+  <div class="grid">
+    <section class="card stack">
+      <div class="hd">
+        <h2>Conversación</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn" id="clearBtn">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="banner" id="aiBanner">
+        <div>
+          <strong>IA no disponible.</strong>
+          <span id="aiBannerText">Se detectó un error (cuota / conexión). Puedes continuar en modo local.</span>
+        </div>
+        <div class="right">
+          <button class="mini" id="forceLocalBtn">Activar modo local</button>
+          <button class="mini secondary" id="hideAiBannerBtn">Ocultar</button>
+        </div>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <div class="bd">
+        <details class="disclosure" style="margin-bottom:12px;">
+          <summary>Preguntas frecuentes</summary>
+
+          <div class="quickActions" style="margin-top:10px;">
+            <div class="quickGrid">
+              <div class="quickBlock">
+                <h4>Preguntas frecuentes</h4>
+                <div class="quickTools" id="userQuickActions"></div>
+                <div class="quickHint">Click = pega el texto en el chat (lo puedes editar antes de enviar).</div>
+              </div>
+            </div>
           </div>
-          <div class="thinkingSub" data-thinking-sub></div>
+        </details>
+
+        <div class="inputRow">
+          <textarea id="q" placeholder="Escribe tu consulta… (Enter para enviar, Shift+Enter para salto de línea)"></textarea>
+          <button class="btn primary" id="sendBtn">Enviar</button>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          Nexo responde <b>solo</b> con evidencia de documentos oficiales. Si algo no está documentado, lo dirá de forma clara.
+        </div>
+
+        <div class="small" id="whoami" style="margin-top:10px; opacity:.9"></div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Nexo · Sistema Inteligente de Conocimiento · Metrored © 2026
+  </footer>
+</main>
+
+<!-- Config Modal (solo Worker URL) -->
+<div class="modalBackdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modalHd">
+      <h3>Configuración</h3>
+      <button class="btn ghost" id="closeCfgBtn">Cerrar</button>
+    </div>
+    <div class="modalBd">
+      <div class="small">
+        Este front ya no usa <b>Gate Key</b>. El acceso se controla con <b>Entra ID</b>.
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <div style="grid-column: 1 / -1;">
+          <label>Worker URL</label>
+          <input id="cfgWorker" placeholder="https://TU-WORKER.workers.dev" />
+          <div class="small" style="margin-top:6px">Se guarda en <b>este dispositivo</b>.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Opciones avanzadas</label>
+
+        <div class="toggleRow">
+          <div class="toggleText">
+            <div class="toggleTitle">Modo IA</div>
+            <div class="toggleDesc">
+              Intenta resumir evidencia con OpenAI. Si hay error (cuota/conexión), Nexo seguirá respondiendo en modo local y te lo mostrará.
+            </div>
+          </div>
+          <button class="toggle" id="aiToggle" type="button" aria-pressed="false">
+            <span class="knob"></span>
+          </button>
+        </div>
+
+        <label style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); font-weight:800; margin:10px 0 0;">
+          <input type="checkbox" id="debugToggle" style="width:16px; height:16px; margin:0;" />
+          Modo debug
+        </label>
+      </div>
+
+      <div style="margin-top:14px" class="small">
+        <div><b>Prueba rápida:</b> Nexo hará un ping a <code>/health</code> para confirmar conexión.</div>
+        <div id="testResult" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="modalFt">
+      <button class="btn" id="testConnBtn">Probar conexión</button>
+      <button class="btn primary" id="saveCfgBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preferences Modal (Quick Actions + Avatar Builder) -->
+<div class="modalBackdrop" id="prefsBackdrop" style="display:none;">
+  <div class="modal">
+    <div class="modalHd">
+      <h3>Personalización</h3>
+      <button class="btn ghost" id="closePrefsBtn">Cerrar</button>
+    </div>
+
+    <div class="modalBd">
+      <div class="row">
+        <div style="grid-column:1 / -1;">
+          <label>Acciones rápidas (por usuario)</label>
+          <div class="small">Se guardan en KV. Si inicias sesión en otra PC, salen igual.</div>
+          <div id="qaList" style="margin-top:10px; display:grid; gap:10px;"></div>
+          <button class="btn" id="qaAddBtn" type="button" style="margin-top:10px;">+ Agregar acción</button>
+        </div>
+
+        <div style="grid-column:1 / -1; margin-top:16px;">
+          <label>Robot del chat (Robot Builder)</label>
+          <div class="small">Personaliza el robot de Nexo (cabeza, ojos, boca, antena, cuerpo y colores). Cambia en vivo.</div>
+
+          <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+            <div id="robotPreview" style="width:56px;height:56px;"></div>
+
+            <div style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0, 1fr)); width:min(560px, 100%);">
+              <div>
+                <label>Cabeza</label>
+                <select id="rbHead" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="capsule">Cápsula</option>
+                  <option value="square">Cuadrada</option>
+                  <option value="hex">Hex</option>
+                </select>
+              </div>
+              <div>
+                <label>Ojos</label>
+                <select id="rbEyes" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="dual">Duales</option>
+                  <option value="mono">Mono</option>
+                  <option value="visor">Visor</option>
+                  <option value="spark">Spark</option>
+                </select>
+              </div>
+              <div>
+                <label>Boca</label>
+                <select id="rbMouth" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="speaker">Speaker</option>
+                  <option value="grille">Grille</option>
+                  <option value="smile">Smile</option>
+                  <option value="neutral">Neutral</option>
+                </select>
+              </div>
+              <div>
+                <label>Antena</label>
+                <select id="rbAntenna" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="none">Ninguna</option>
+                  <option value="dot">Punto</option>
+                  <option value="double">Doble</option>
+                  <option value="dish">Antena</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Cuerpo</label>
+                <select id="rbBody" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;">
+                  <option value="none">Sin cuerpo</option>
+                  <option value="torso">Torso</option>
+                  <option value="hover">Hover</option>
+                </select>
+              </div>
+              <div>
+                <label>Color principal</label>
+                <input id="rbPrimary" type="color" value="#5b6bff" style="width:100%; height:46px; padding:6px 10px;" />
+              </div>
+              <div>
+                <label>Color secundario</label>
+                <input id="rbSecondary" type="color" value="#0a84ff" style="width:100%; height:46px; padding:6px 10px;" />
+              </div>
+              <div style="display:flex; align-items:end; gap:10px;">
+                <label style="margin:0;">Glow</label>
+                <input id="rbGlow" type="checkbox" style="width:20px; height:20px;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="grid-column:1 / -1; margin-top:10px;">
+          <div class="small" id="prefsStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalFt">
+      <button class="btn" id="prefsReloadBtn" type="button">Recargar</button>
+      <button class="btn primary" id="prefsSaveBtn" type="button">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ======================
+  // ENTRA ID (MSAL) - Metrored
+  // ======================
+  const ENTRA_TENANT_ID = "480bd49c-6f89-4faa-b39e-c7728d95d130";
+  const ENTRA_CLIENT_ID = "7bcef56f-d3c5-4a94-a953-41f8c6b0fa54";
+  const ENTRA_SCOPE = "api://66130291-fc50-43f1-943c-6818dac1ba99/basedeconocimiento";
+
+  const msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId: ENTRA_CLIENT_ID,
+      authority: "https://login.microsoftonline.com/" + ENTRA_TENANT_ID,
+      redirectUri: window.location.origin + window.location.pathname,
+    },
+    cache: { cacheLocation: "sessionStorage" },
+  });
+
+  // ======================
+  // App storage
+  // ======================
+  const LS_WORKER = "nexo_worker_url";
+  const LS_SCOPE  = "nexo_scope";
+  const LS_AI     = "nexo_ai_mode";
+
+  const DEFAULT_WORKER = "https://nexo-worker.dbermeo.workers.dev";
+  const DEFAULT_SCOPE  = "all";
+  const DEFAULT_AI     = "1"; // IA encendida por defecto
+
+  // Microsoft 365 photo (se usa como avatar del usuario en el chat)
+  let USER_PHOTO_URL = "";
+
+  function getScope(){
+    return DEFAULT_SCOPE;
+  }
+  function setScope(){
+    localStorage.setItem(LS_SCOPE, DEFAULT_SCOPE);
+    refreshScopeUI();
+  }
+
+  function getAI(){
+    return localStorage.getItem(LS_AI) === "1";
+  }
+  function setAI(v){
+    localStorage.setItem(LS_AI, v ? "1" : "0");
+    refreshAIUI();
+    refreshHeaderBadges();
+  }
+  function toggleAI(){
+    setAI(!getAI());
+  }
+
+  function getWorkerUrl(){
+    return (localStorage.getItem(LS_WORKER) || DEFAULT_WORKER).replace(/\/+$/,'');
+  }
+
+  // ======================
+  // UI helpers
+  // ======================
+  const chatEl = document.getElementById("chat");
+
+  // ======================
+  // Preferences (KV via worker)
+  // ======================
+  let USER_PREFS = null; // se llena con /me/preferences
+  const PREFS_DEFAULT = {
+    version: 1,
+    quickActions: [
+      { id: "qa_reembolso", label: "Reembolso en caja", text: "¿Cuál es el procedimiento para realizar un reembolso en caja?" },
+      { id: "qa_colono", label: "Preparación colonoscopía", text: "¿Cómo debe venir preparado un paciente para una colonoscopía?" },
+      { id: "qa_copago", label: "Copago Saludsa Masivos", text: "Copago Saludsa Masivos para consulta de medicina general" },
+      { id: "qa_admision", label: "Política admisión", text: "¿Qué políticas internas aplican para admisión de pacientes?" }
+    ],
+    // User avatar is fixed (no custom). Bot robot is customizable.
+    userAvatar: { face: "rounded", eyes: "calm", mouth: "smile", color: "#5b6bff" },
+    robot: {
+      head: "capsule",       // capsule | square | hex
+      eyes: "dual",          // dual | mono | visor | spark
+      mouth: "speaker",      // speaker | grille | smile | neutral
+      antenna: "dot",        // none | dot | double | dish
+      body: "torso",         // none | torso | hover
+      primary: "#5b6bff",     // #RRGGBB
+      secondary: "#0a84ff",   // #RRGGBB
+      glow: true
+    },
+    updatedAt: null,
+  };
+
+  function escapeHtml(s){
+    return String(s || "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function getUserPhotoSrc(){
+    if (USER_PHOTO_URL) return USER_PHOTO_URL;
+    const photoEl = document.getElementById("userPhoto");
+    const src = (photoEl && (photoEl.getAttribute("src") || photoEl.src)) ? (photoEl.getAttribute("src") || photoEl.src) : "";
+    return (src && src.length > 5) ? src : "";
+  }
+
+  function refreshUserPhotosInChat(){
+    const src = getUserPhotoSrc();
+    if (!src) return;
+
+    document.querySelectorAll(".msg.me .avatar.user").forEach(av => {
+      const img = av.querySelector("img");
+      if (img) {
+        img.src = src;
+      } else {
+        av.innerHTML = `<img src="${escapeHtml(src)}" alt="Usuario">`;
+      }
+    });
+  }
+
+  function setStatus(ok, text){
+    document.getElementById("statusDot").style.background = ok ? "var(--ok)" : "var(--danger)";
+    document.getElementById("statusText").textContent = text;
+  }
+
+  function showAiBanner(msg){
+    const b = document.getElementById("aiBanner");
+    const t = document.getElementById("aiBannerText");
+    if(t) t.textContent = msg || "IA no disponible. Puedes continuar en modo local.";
+    if(b) b.style.display = "flex";
+  }
+  function hideAiBanner(){
+    const b = document.getElementById("aiBanner");
+    if(b) b.style.display = "none";
+  }
+
+  function forceLocalMode(){
+    setAI(false);
+    showAiBanner("Modo local activado. La IA queda apagada hasta que la vuelvas a encender.");
+  }
+
+  function scopeLabelPretty(scope){
+    if (scope === "all") return "SGC + Aseguradoras";
+    return scope === "internal" ? "SGC" : "Aseguradoras";
+  }
+
+  function refreshScopeUI(){
+    const scopeLabel = document.getElementById("scopeStatus");
+    if(scopeLabel){
+      scopeLabel.textContent = "Buscando en: SGC + Aseguradoras";
+    }
+
+    refreshHeaderBadges();
+  }
+
+  function refreshAIUI(){
+    const btn = document.getElementById("aiToggle");
+    if(!btn) return;
+    const on = getAI();
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", String(on));
+  }
+
+  function refreshHeaderBadges(){
+    const scope = getScope();
+    const ai = getAI();
+
+    const scopeBadge = document.getElementById("scopeBadge");
+    const aiBadge = document.getElementById("aiBadge");
+    const modeHintText = document.getElementById("modeHintText");
+
+    if(scopeBadge){
+      scopeBadge.textContent = scope === "all" ? "SGC + Aseguradoras" : (scope === "internal" ? "SGC" : "Aseguradoras");
+    }
+    if(aiBadge){
+      aiBadge.classList.toggle("hidden", !ai);
+    }
+    if(modeHintText){
+      modeHintText.textContent = ai ? "Modo IA activado" : "Modo local";
+    }
+  }
+
+  // ======================
+  // Avatars (SVG)
+  // - userAvatarSvg: fixed (not customizable)
+  // - robotSvg: customizable chat bot (Robot Builder)
+  // ======================
+  function clampHexColor(c){
+    const s = String(c || "").trim();
+    return /^#([0-9a-fA-F]{6})$/.test(s) ? s : "#5b6bff";
+  }
+
+  function userAvatarSvg(avatar){
+    const a = avatar || PREFS_DEFAULT.userAvatar;
+    const face = a.face || "rounded";
+    const eyes = a.eyes || "calm";
+    const mouth = a.mouth || "smile";
+    const color = clampHexColor(a.color);
+
+    // Face shape
+    const facePath =
+      face === "oval" ? "M32 10c12 0 18 10 18 22s-6 22-18 22S14 44 14 32 20 10 32 10z" :
+      face === "square" ? "M18 14h28a8 8 0 0 1 8 8v20a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V22a8 8 0 0 1 8-8z" :
+      /* rounded */      "M32 10c12.5 0 22 8.5 22 22S44.5 54 32 54 10 45.5 10 32 19.5 10 32 10z";
+
+    // Eyes
+    const eyeL = { x: 23, y: 30 };
+    const eyeR = { x: 41, y: 30 };
+
+    const eyesSvg =
+      eyes === "happy" ?
+        `<path d="M18 30c2 2 4 3 6 3s4-1 6-3" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M34 30c2 2 4 3 6 3s4-1 6-3" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      eyes === "focused" ?
+        `<circle cx="${eyeL.x}" cy="${eyeL.y}" r="2.2" fill="#0f172a"/>
+         <circle cx="${eyeR.x}" cy="${eyeR.y}" r="2.2" fill="#0f172a"/>
+         <path d="M17 26h12" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M35 26h12" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      /* calm */
+        `<circle cx="${eyeL.x}" cy="${eyeL.y}" r="2.2" fill="#0f172a"/>
+         <circle cx="${eyeR.x}" cy="${eyeR.y}" r="2.2" fill="#0f172a"/>`;
+
+    // Mouth
+    const mouthSvg =
+      mouth === "neutral" ?
+        `<path d="M24 42h16" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>` :
+      mouth === "grin" ?
+        `<path d="M24 40c2 4 6 6 8 6s6-2 8-6" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+         <path d="M26 42h12" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" opacity=".35"/>` :
+      /* smile */
+        `<path d="M24 40c2 4 6 6 8 6s6-2 8-6" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>`;
+
+    return `
+      <svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="avatar">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${color}" stop-opacity=".35"/>
+            <stop offset="1" stop-color="${color}" stop-opacity=".12"/>
+          </linearGradient>
+        </defs>
+        <path d="${facePath}" fill="url(#g)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>
+        <path d="${facePath}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" opacity=".35"/>
+        ${eyesSvg}
+        ${mouthSvg}
+        <circle cx="20" cy="38" r="2.6" fill="${color}" opacity=".18"/>
+        <circle cx="44" cy="38" r="2.6" fill="${color}" opacity=".18"/>
+      </svg>
+    `.trim();
+  }
+
+  function currentUserAvatar(){
+    return PREFS_DEFAULT.userAvatar;
+  }
+
+  function currentRobot(){
+    return (USER_PREFS && USER_PREFS.robot) ? USER_PREFS.robot : PREFS_DEFAULT.robot;
+  }
+
+  function robotSvg(robot){
+    const r = robot || PREFS_DEFAULT.robot;
+    const head = r.head || "capsule";
+    const eyes = r.eyes || "dual";
+    const mouth = r.mouth || "speaker";
+    const antenna = r.antenna || "dot";
+    const body = r.body || "torso";
+    const p = clampHexColor(r.primary);
+    const s = clampHexColor(r.secondary);
+    const glow = !!r.glow;
+
+    const headShape =
+      head === "square" ? `<rect x="14" y="12" width="36" height="30" rx="10" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>` :
+      head === "hex" ? `<path d="M32 10l14 8v18l-14 8-14-8V18l14-8z" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>` :
+      /* capsule */      `<rect x="12" y="12" width="40" height="30" rx="15" fill="url(#hp)" stroke="rgba(148,163,184,.55)" stroke-width="1.2"/>`;
+
+    const antennaSvg =
+      antenna === "none" ? "" :
+      antenna === "double" ? `
+        <path d="M28 12V7" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M36 12V7" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="28" cy="6" r="2.2" fill="${s}"/>
+        <circle cx="36" cy="6" r="2.2" fill="${s}"/>` :
+      antenna === "dish" ? `
+        <path d="M32 12V6" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M26 6c3-4 9-4 12 0" fill="none" stroke="${s}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="6" r="2.1" fill="${s}"/>` :
+      /* dot */ `
+        <path d="M32 12V6" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="5" r="2.4" fill="${s}"/>`;
+
+    const eyesSvg =
+      eyes === "mono" ? `
+        <rect x="20" y="22" width="24" height="10" rx="5" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <circle cx="32" cy="27" r="3" fill="${s}"/>` :
+      eyes === "visor" ? `
+        <rect x="18" y="21" width="28" height="12" rx="6" fill="rgba(15,23,42,.10)" stroke="rgba(15,23,42,.25)"/>
+        <path d="M20 27h24" stroke="${s}" stroke-width="2" stroke-linecap="round" opacity=".7"/>` :
+      eyes === "spark" ? `
+        <circle cx="26" cy="27" r="3" fill="${s}"/>
+        <circle cx="38" cy="27" r="3" fill="${s}"/>
+        <path d="M24 20l2 3 3 1-3 1-2 3-1-3-3-1 3-1 1-3z" fill="${s}" opacity=".45"/>` :
+      /* dual */ `
+        <circle cx="26" cy="27" r="3" fill="${s}"/>
+        <circle cx="38" cy="27" r="3" fill="${s}"/>`;
+
+    const mouthSvg =
+      mouth === "grille" ? `
+        <rect x="23" y="34" width="18" height="8" rx="4" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <path d="M26 36h12" stroke="rgba(15,23,42,.35)" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M26 39h12" stroke="rgba(15,23,42,.35)" stroke-width="1.6" stroke-linecap="round"/>` :
+      mouth === "smile" ? `
+        <path d="M24 38c2 3 6 4 8 4s6-1 8-4" fill="none" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>` :
+      mouth === "neutral" ? `
+        <path d="M26 40h12" stroke="rgba(15,23,42,.55)" stroke-width="2" stroke-linecap="round"/>` :
+      /* speaker */ `
+        <rect x="22" y="35" width="20" height="7" rx="3.5" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.25)"/>
+        <circle cx="27" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>
+        <circle cx="32" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>
+        <circle cx="37" cy="38.5" r="1" fill="rgba(15,23,42,.45)"/>`;
+
+    const bodySvg =
+      body === "none" ? "" :
+      body === "hover" ? `
+        <path d="M20 49h24" stroke="rgba(15,23,42,.18)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M24 45h16" stroke="rgba(15,23,42,.12)" stroke-width="6" stroke-linecap="round"/>` :
+      /* torso */ `
+        <rect x="18" y="44" width="28" height="12" rx="6" fill="rgba(15,23,42,.04)" stroke="rgba(148,163,184,.55)"/>
+        <circle cx="32" cy="50" r="3" fill="${s}" opacity=".55"/>`;
+
+    const glowSvg = glow ? `<filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` : "";
+    const headFilter = glow ? `filter="url(#gl)"` : "";
+
+    return `
+      <svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="robot">
+        <defs>
+          <linearGradient id="hp" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${p}" stop-opacity=".35"/>
+            <stop offset="1" stop-color="${p}" stop-opacity=".10"/>
+          </linearGradient>
+          <linearGradient id="hs" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${s}" stop-opacity=".30"/>
+            <stop offset="1" stop-color="${s}" stop-opacity=".08"/>
+          </linearGradient>
+          ${glowSvg}
+        </defs>
+        <rect x="6" y="6" width="52" height="52" rx="18" fill="white" opacity="0.92"/>
+        <g ${headFilter}>
+          ${antennaSvg}
+          ${headShape}
+          <path d="M14 26h36" stroke="url(#hs)" stroke-width="2" opacity=".7"/>
+          ${eyesSvg}
+          ${mouthSvg}
+        </g>
+        ${bodySvg}
+        <rect x="6" y="6" width="52" height="52" rx="18" fill="none" stroke="rgba(148,163,184,.45)"/>
+      </svg>
+    `.trim();
+  }
+
+  function addMsg(role, who, text, metaTag, aiTag){
+    const div = document.createElement("div");
+    div.className = "msg " + (role === "me" ? "me" : "bot");
+    const userSrc = getUserPhotoSrc();
+    const avatar = role === "me"
+      ? `<div class="avatar user">${userSrc ? `<img src="${escapeHtml(userSrc)}" alt="Usuario">` : userAvatarSvg(currentUserAvatar())}</div>`
+      : `<div class="avatar bot">${robotSvg(currentRobot())}</div>`;
+
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    div.innerHTML = `
+      ${avatar}
+      <div class="bubble">
+        <div class="meta">${escapeHtml(who)} ${tagHtml} ${aiHtml}</div>
+        <p></p>
+      </div>`;
+    div.querySelector("p").textContent = text;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+function stripSourcesFromAnswer(answer){
+  const s = String(answer || "");
+
+  // Corta todo lo que venga desde "Fuentes:" hacia abajo (case-insensitive)
+  const idx = s.search(/\n\s*fuentes\s*:/i);
+  if (idx >= 0) return s.slice(0, idx).trim();
+
+  return s.trim();
+}
+  
+  function addBotHtml(title, answer, sources, metaTag, aiTag){
+    const div = document.createElement("div");
+    div.className = "msg bot";
+    const srcHtml = (sources && sources.length)
+      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1)">
+           <div class="meta">Fuentes</div>
+           <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
+         </div>`
+      : "";
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    div.innerHTML = `
+      <div class="avatar bot">${robotSvg(currentRobot())}</div>
+      <div class="bubble">
+        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
+        <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
+        ${srcHtml}
+      </div>`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  // ======================
+  // Entra helpers
+  // ======================
+  function getTokenClaims(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    return (acc && acc.idTokenClaims) ? acc.idTokenClaims : null;
+  }
+
+  // ✅ Nombre para saludo (humano)
+  function getFirstName(){
+    const claims = getTokenClaims() || {};
+    const raw =
+      claims.given_name ||
+      (claims.name ? String(claims.name).split(" ")[0] : "") ||
+      (claims.preferred_username ? String(claims.preferred_username).split("@")[0] : "") ||
+      "";
+    const name = String(raw || "").trim();
+    if (!name) return null;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  function clearChat(){
+    chatEl.innerHTML = "";
+    const name = getFirstName();
+    const greet = name
+      ? `Hola, ${name}. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.`
+      : "Hola. Escribe tu consulta y te respondo solo con evidencia de documentos oficiales.";
+
+    addMsg(
+      "bot",
+      "Nexo",
+      greet,
+      scopeLabelPretty(getScope()),
+      getAI() ? "IA" : "Local"
+    );
+  }
+
+  // ======================
+  // Config modal
+  // ======================
+  function openConfig(){
+    document.getElementById("cfgWorker").value = getWorkerUrl();
+    document.getElementById("testResult").innerHTML = "";
+    refreshAIUI();
+    refreshHeaderBadges();
+    document.getElementById("modalBackdrop").style.display = "flex";
+  }
+  function closeConfig(){
+    document.getElementById("modalBackdrop").style.display = "none";
+  }
+
+  async function testConnection(){
+    const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
+    const el = document.getElementById("testResult");
+    el.innerHTML = "Probando…";
+    try{
+      const r = await fetch(worker + "/health", { method:"GET" });
+      const t = await r.text();
+      if(r.ok){
+        el.innerHTML = `<span class="ok">OK</span> · ${escapeHtml(t || "Conectado")}`;
+      }else{
+        el.innerHTML = `<span class="err">ERROR</span> · Status ${r.status} · ${escapeHtml(t)}`;
+      }
+    }catch(e){
+      el.innerHTML = `<span class="err">ERROR</span> · ${escapeHtml(e.message || String(e))}`;
+    }
+  }
+
+  function saveConfig(){
+    const worker = (document.getElementById("cfgWorker").value || "").trim().replace(/\/+$/,'');
+    if(!worker){
+      document.getElementById("testResult").innerHTML = `<span class="err">Falta Worker URL</span>`;
+      return;
+    }
+    localStorage.setItem(LS_WORKER, worker);
+    closeConfig();
+    refreshHeaderBadges();
+  }
+
+  // ======================
+  // User panel: name + role/area + photo
+  // ======================
+  function safeInitials(nameOrEmail){
+    const s = String(nameOrEmail || "").trim();
+    if (!s) return "U";
+    const parts = s.split(/[\s.@_-]+/).filter(Boolean);
+    const a = (parts[0] || "U")[0] || "U";
+    const b = (parts[1] || "")[0] || "";
+    return (a + b).toUpperCase();
+  }
+
+  function setUserUI({ name, email, tenantId, photoUrl, roleLine }){
+    const userChip = document.getElementById("userChip");
+    const userNameEl = document.getElementById("userName");
+    const roleEl = document.getElementById("userRole");
+    const initialsEl = document.getElementById("userInitials");
+    const photoEl = document.getElementById("userPhoto");
+    const verifiedEl = document.getElementById("verifiedBadge");
+
+    const display = name || email || "Usuario";
+    if (userNameEl) userNameEl.textContent = display;
+    if (roleEl) roleEl.textContent = roleLine || "—";
+
+    const initials = safeInitials(display);
+    if (initialsEl) initialsEl.textContent = initials;
+
+    if (verifiedEl){
+      const shortTenant = tenantId ? String(tenantId).slice(0, 6) + "…" : "";
+      verifiedEl.textContent = shortTenant ? `Verificado · ${shortTenant}` : "Verificado";
+    }
+
+    if (photoEl){
+      if (photoUrl){
+        USER_PHOTO_URL = photoUrl;
+        photoEl.src = photoUrl;
+        photoEl.style.display = "block";
+        if (initialsEl) initialsEl.style.display = "none";
+        refreshUserPhotosInChat();
+      } else {
+        photoEl.style.display = "none";
+        if (initialsEl) initialsEl.style.display = "grid";
+      }
+    }
+
+    if (userChip) userChip.style.display = "flex";
+  }
+
+  async function tryLoadProfilePhoto(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) return null;
+
+    let token;
+    try{
+      const r = await msalInstance.acquireTokenSilent({ scopes:["User.Read"], account: acc });
+      token = r.accessToken;
+    }catch{
+      return null;
+    }
+
+    try{
+      const resp = await fetch("https://graph.microsoft.com/v1.0/me/photo/$value", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!resp.ok) return null;
+      const blob = await resp.blob();
+      return URL.createObjectURL(blob);
+    }catch{
+      return null;
+    }
+  }
+
+  async function tryLoadRoleArea(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) return null;
+
+    let token;
+    try{
+      const r = await msalInstance.acquireTokenSilent({ scopes:["User.Read"], account: acc });
+      token = r.accessToken;
+    }catch{
+      return null;
+    }
+
+    try{
+      const resp = await fetch("https://graph.microsoft.com/v1.0/me?$select=jobTitle,department,companyName,officeLocation", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!resp.ok) return null;
+
+      const me = await resp.json().catch(()=>null);
+      if (!me) return null;
+
+      const jobTitle = (me.jobTitle || "").trim();
+      const department = (me.department || "").trim();
+      const company = (me.companyName || "").trim();
+      const office = (me.officeLocation || "").trim();
+
+      const parts = [];
+      if (jobTitle) parts.push(jobTitle);
+      if (department) parts.push(department);
+      if (!parts.length && company) parts.push(company);
+      if (!parts.length && office) parts.push(office);
+
+      const roleLine = parts.join(" · ").trim();
+      return roleLine || null;
+    }catch{
+      return null;
+    }
+  }
+
+  async function refreshUserProfileUI(){
+    const claims = getTokenClaims() || {};
+    const name =
+      claims.name ||
+      claims.given_name ||
+      claims.preferred_username ||
+      claims.unique_name ||
+      "";
+
+    const email =
+      claims.preferred_username ||
+      claims.upn ||
+      "";
+
+    const tenantId =
+      claims.tid || ENTRA_TENANT_ID;
+
+    setUserUI({ name, email, tenantId, photoUrl: null, roleLine: null });
+
+    const photoUrl = await tryLoadProfilePhoto();
+    if (photoUrl){
+      setUserUI({ name, email, tenantId, photoUrl, roleLine: (document.getElementById("userRole")?.textContent || null) });
+    }
+
+    const roleLine = await tryLoadRoleArea();
+    if (roleLine){
+      setUserUI({ name, email, tenantId, photoUrl: photoUrl || null, roleLine });
+    }
+  }
+
+  // ======================
+  // Auth UI + screens
+  // ======================
+  function showLogin(){
+    document.getElementById("loginWrap").style.display = "flex";
+    document.getElementById("appMain").style.display = "none";
+    document.getElementById("appHeader").style.display = "none";
+    document.getElementById("loginBtn").style.display = "inline-block";
+    document.getElementById("logoutBtn").style.display = "none";
+    document.getElementById("prefsBtn").style.display = "none";
+    document.getElementById("whoami").innerHTML = `<b>Sesión:</b> no autenticado`;
+    document.getElementById("userChip").style.display = "none";
+  }
+
+  function showApp(){
+    document.getElementById("loginWrap").style.display = "none";
+    document.getElementById("appMain").style.display = "flex";
+    document.getElementById("appHeader").style.display = "flex";
+    document.getElementById("loginBtn").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "inline-block";
+    document.getElementById("prefsBtn").style.display = "inline-block";
+  }
+
+  function refreshAuthUI(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+
+    if (acc){
+      document.getElementById("whoami").innerHTML = `<b>Sesión:</b> ${escapeHtml(acc.username || "usuario")}`;
+      setStatus(true, "Autenticado");
+      showApp();
+      refreshUserProfileUI().catch(()=>{});
+
+      // ✅ cargar preferencias por usuario (KV)
+      loadPreferences().catch(()=>{});
+
+      // ✅ refresca saludo con nombre cuando ya hay sesión
+      clearChat();
+    } else {
+      setStatus(false, "No autenticado");
+      showLogin();
+    }
+  }
+
+  async function authInit(){
+    await msalInstance.initialize();
+
+    const response = await msalInstance.handleRedirectPromise().catch(() => null);
+    if (response && response.account) {
+      msalInstance.setActiveAccount(response.account);
+    } else {
+      const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+      if (acc) msalInstance.setActiveAccount(acc);
+    }
+
+    refreshAuthUI();
+  }
+
+  async function login(){
+    await msalInstance.loginRedirect({
+      scopes: [ENTRA_SCOPE, "User.Read"],
+      prompt: "select_account"
+    });
+  }
+
+  async function logout(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) {
+      refreshAuthUI();
+      return;
+    }
+    await msalInstance.logoutRedirect({ account: acc });
+  }
+
+  async function getAccessToken(){
+    const acc = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    if (!acc) throw new Error("NOT_LOGGED_IN");
+
+    try {
+      const r = await msalInstance.acquireTokenSilent({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
+      return r.accessToken;
+    } catch {
+      await msalInstance.acquireTokenRedirect({
+        scopes: [ENTRA_SCOPE],
+        account: acc
+      });
+      throw new Error("REDIRECTING");
+    }
+  }
+
+  // ======================
+  // Preferences (KV via worker)
+  // ======================
+  async function prefsFetch(path, opts = {}){
+    const worker = getWorkerUrl();
+    const token = await getAccessToken();
+    const r = await fetch(worker + path, {
+      ...opts,
+      headers: {
+        ...(opts.headers || {}),
+        "Authorization": "Bearer " + token,
+      },
+    });
+    return r;
+  }
+
+  function openPrefs(){
+    document.getElementById("prefsBackdrop").style.display = "flex";
+    document.getElementById("prefsStatus").textContent = "";
+    renderPrefsModal();
+  }
+
+  function closePrefs(){
+    document.getElementById("prefsBackdrop").style.display = "none";
+  }
+
+  function applyRobotEverywhere(){
+    // Update robot avatars already rendered in the chat
+    document.querySelectorAll(".avatar.bot").forEach(el => {
+      el.innerHTML = robotSvg(currentRobot());
+    });
+
+    const headerRobot = document.getElementById("headerRobot");
+    if (headerRobot) headerRobot.innerHTML = robotSvg(currentRobot());
+
+    // If modal is open, keep preview in sync
+    const prev = document.getElementById("robotPreview");
+    if (prev) prev.innerHTML = robotSvg(currentRobot());
+  }
+
+  function renderUserQuickActions(){
+    const wrap = document.getElementById("userQuickActions");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+
+    const list = (USER_PREFS && Array.isArray(USER_PREFS.quickActions) && USER_PREFS.quickActions.length)
+      ? USER_PREFS.quickActions
+      : (PREFS_DEFAULT.quickActions || []);
+
+    for (const qa of list){
+      const b = document.createElement("button");
+      b.className = "quickBtn";
+      b.type = "button";
+      b.textContent = qa.label || "Acción";
+      b.addEventListener("click", () => quick(qa.text || ""));
+      wrap.appendChild(b);
+    }
+  }
+
+  async function loadPreferences(){
+    try{
+      const r = await prefsFetch("/me/preferences", { method: "GET" });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || !j.ok) throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
+      USER_PREFS = j.prefs || PREFS_DEFAULT;
+    }catch(e){
+      // si falla, seguimos con defaults (no bloquea el chat)
+      USER_PREFS = USER_PREFS || PREFS_DEFAULT;
+      console.log("prefs load failed:", e);
+    }
+
+    renderUserQuickActions();
+    applyRobotEverywhere();
+  }
+
+  async function savePreferences(){
+    const status = document.getElementById("prefsStatus");
+    if (status) status.textContent = "Guardando…";
+    try{
+      const r = await prefsFetch("/me/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(USER_PREFS || PREFS_DEFAULT),
+      });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || !j.ok) throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
+      if (status) status.textContent = "OK · Guardado";
+      renderUserQuickActions();
+      applyRobotEverywhere();
+    }catch(e){
+      if (status) status.textContent = "ERROR: " + (e.message || String(e));
+    }
+  }
+
+  function renderPrefsModal(){
+    if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
+    if (!Array.isArray(USER_PREFS.quickActions)) USER_PREFS.quickActions = [];
+    if (!USER_PREFS.robot) USER_PREFS.robot = { ...PREFS_DEFAULT.robot };
+
+    // Quick actions editor
+    const listEl = document.getElementById("qaList");
+    listEl.innerHTML = "";
+
+    USER_PREFS.quickActions.forEach((qa, idx) => {
+      const card = document.createElement("div");
+      card.style.border = "1px solid var(--border)";
+      card.style.background = "#fff";
+      card.style.borderRadius = "14px";
+      card.style.padding = "12px";
+      card.style.display = "grid";
+      card.style.gap = "10px";
+
+      card.innerHTML = `
+        <div class="row" style="grid-template-columns: 1fr;">
+          <div>
+            <label>Título</label>
+            <input data-idx="${idx}" data-field="label" value="${escapeHtml(qa.label || "")}" />
+          </div>
+          <div style="grid-column:1 / -1;">
+            <label>Texto</label>
+            <textarea data-idx="${idx}" data-field="text" rows="3" style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--border); background:#fff;"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" data-act="up" data-idx="${idx}" type="button">↑</button>
+          <button class="btn" data-act="down" data-idx="${idx}" type="button">↓</button>
+          <button class="btn" data-act="del" data-idx="${idx}" type="button">Eliminar</button>
+          <button class="btn primary" data-act="use" data-idx="${idx}" type="button">Usar (pegar)</button>
         </div>
       `;
-      chatEl.appendChild(div);
-      chatEl.scrollTop = chatEl.scrollHeight;
-      return div;
-    }
+      listEl.appendChild(card);
 
-    function updateBotThinking(node, text, sub = "") {
-      if (!node) return;
-      const t = node.querySelector("[data-thinking-text]");
-      const s = node.querySelector("[data-thinking-sub]");
-      if (t) t.textContent = text || "Pensando…";
-      if (s) s.textContent = sub || "";
-    }
+      const ta = card.querySelector("textarea[data-field='text']");
+      ta.value = qa.text || "";
 
-    function finalizeBotThinking(node, finalText, sources = []) {
-      if (!node) return;
-      node.classList.remove("pending");
-      const bubble = node.querySelector(".bubble");
-      if (!bubble) return;
-      let sourcesHtml = "";
-      if (sources && sources.length) {
-        sourcesHtml = '<div class="sources">' + sources.map((src, idx) => {
-          const title = escapeHtml(src.title || `Fuente ${idx+1}`);
-          const url = escapeHtml(src.url || "");
-          return `<div><a href="${url}" target="_blank">${title}</a></div>`;
-        }).join("") + '</div>';
-      }
-      bubble.innerHTML = `
-        <div class="meta">Nexo <span class="tag">SGC + Aseguradoras</span> <span class="tag ai">IA</span></div>
-        <pre class="plainAnswer">${escapeHtml(finalText || "")}</pre>
-        ${sourcesHtml}
-      `;
-    }
-
-    // Render a user message
-    function addUserMessage(text) {
-      const chatEl = document.getElementById("chat");
-      const msgDiv = document.createElement("div");
-      msgDiv.className = "msg user";
-      msgDiv.innerHTML = `
-        <div class="bubble">
-          <div class="meta">Tú</div>
-          <div>${escapeHtml(text)}</div>
-        </div>
-        <div class="avatar user">👤</div>
-      `;
-      chatEl.appendChild(msgDiv);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
-
-    // Authentication UI toggling
-    const signInBtn = document.getElementById("signInBtn");
-    const signOutBtn = document.getElementById("signOutBtn");
-    const inputArea = document.getElementById("inputArea");
-    const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
-
-    async function signIn() {
-      try {
-        const loginResponse = await msalInstance.loginPopup();
-        account = loginResponse.account;
-        updateUIForAuth(true);
-      } catch (err) {
-        console.error(err);
-        alert("Error al iniciar sesión: " + err.message);
-      }
-    }
-
-    async function signOut() {
-      try {
-        await msalInstance.logoutPopup({ account: account });
-        account = null;
-        updateUIForAuth(false);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function updateUIForAuth(isAuth) {
-      signInBtn.style.display = isAuth ? "none" : "inline-block";
-      signOutBtn.style.display = isAuth ? "inline-block" : "none";
-      inputArea.style.display = isAuth ? "flex" : "none";
-      if (isAuth) {
-        document.getElementById("messageInput").focus();
-      }
-    }
-
-    async function acquireToken(scopes = ["api://default/.default"]) {
-      const request = {
-        scopes: scopes,
-        account: account
-      };
-      try {
-        const response = await msalInstance.acquireTokenSilent(request);
-        return response.accessToken;
-      } catch (err) {
-        console.warn("Silent token acquisition failed, falling back to popup", err);
-        const response = await msalInstance.acquireTokenPopup(request);
-        return response.accessToken;
-      }
-    }
-
-    // Handle sending the question to the worker
-    async function sendMessage() {
-      const text = messageInput.value.trim();
-      if (!text) return;
-      addUserMessage(text);
-      messageInput.value = "";
-      messageInput.focus();
-      // Show thinking bubble
-      const thinkingNode = addBotThinking("Nexo", "SGC + Aseguradoras", "IA");
-      const stages = [
-        "Buscando documentos…",
-        "Filtrando resultados…",
-        "Descargando documentos…",
-        "Leyendo documentos…",
-        "Armando respuesta…"
-      ];
-      let stageIdx = 0;
-      const intervalId = setInterval(() => {
-        stageIdx = (stageIdx + 1) % stages.length;
-        updateBotThinking(thinkingNode, stages[stageIdx]);
-      }, 1000);
-      try {
-        const token = await acquireToken(["api://default/.default"]);
-        // Warm up /health endpoint to reduce cold start latency
-        fetch("/health").catch(() => {});
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": token ? `Bearer ${token}` : ""
-          },
-          body: JSON.stringify({ q: text })
+      card.querySelectorAll("input,textarea").forEach(el => {
+        el.addEventListener("input", (e) => {
+          const i = Number(e.target.dataset.idx);
+          const f = e.target.dataset.field;
+          USER_PREFS.quickActions[i][f] = e.target.value;
         });
-        clearInterval(intervalId);
-        if (response.ok) {
-          const data = await response.json();
-          finalizeBotThinking(thinkingNode, data.answer, data.sources || []);
-        } else {
-          finalizeBotThinking(thinkingNode, `Error: ${response.status} ${response.statusText}`);
-        }
-      } catch (err) {
-        clearInterval(intervalId);
-        console.error(err);
-        finalizeBotThinking(thinkingNode, "No se pudo obtener la respuesta. Intenta de nuevo más tarde.");
-      }
+        el.addEventListener("change", (e) => {
+          const i = Number(e.target.dataset.idx);
+          const f = e.target.dataset.field;
+          USER_PREFS.quickActions[i][f] = e.target.value;
+        });
+      });
+
+      card.querySelectorAll("button[data-act]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.dataset.idx);
+          const act = btn.dataset.act;
+          if (act === "del"){
+            USER_PREFS.quickActions.splice(i, 1);
+            renderPrefsModal();
+            return;
+          }
+          if (act === "up" && i > 0){
+            const t = USER_PREFS.quickActions[i-1];
+            USER_PREFS.quickActions[i-1] = USER_PREFS.quickActions[i];
+            USER_PREFS.quickActions[i] = t;
+            renderPrefsModal();
+            return;
+          }
+          if (act === "down" && i < USER_PREFS.quickActions.length - 1){
+            const t = USER_PREFS.quickActions[i+1];
+            USER_PREFS.quickActions[i+1] = USER_PREFS.quickActions[i];
+            USER_PREFS.quickActions[i] = t;
+            renderPrefsModal();
+            return;
+          }
+          if (act === "use"){
+            const qa = USER_PREFS.quickActions[i];
+            quick(qa.text || "");
+            closePrefs();
+          }
+        });
+      });
+    });
+
+    // Robot Builder controls (chat bot avatar)
+    const rb = USER_PREFS.robot || (USER_PREFS.robot = { ...PREFS_DEFAULT.robot });
+
+    document.getElementById("rbHead").value = rb.head || "capsule";
+    document.getElementById("rbEyes").value = rb.eyes || "dual";
+    document.getElementById("rbMouth").value = rb.mouth || "speaker";
+    document.getElementById("rbAntenna").value = rb.antenna || "dot";
+    document.getElementById("rbBody").value = rb.body || "torso";
+    document.getElementById("rbPrimary").value = clampHexColor(rb.primary);
+    document.getElementById("rbSecondary").value = clampHexColor(rb.secondary);
+    document.getElementById("rbGlow").checked = !!rb.glow;
+
+    const prev = document.getElementById("robotPreview");
+    prev.innerHTML = robotSvg(rb);
+
+    function syncRobot(){
+      rb.head = document.getElementById("rbHead").value;
+      rb.eyes = document.getElementById("rbEyes").value;
+      rb.mouth = document.getElementById("rbMouth").value;
+      rb.antenna = document.getElementById("rbAntenna").value;
+      rb.body = document.getElementById("rbBody").value;
+      rb.primary = clampHexColor(document.getElementById("rbPrimary").value);
+      rb.secondary = clampHexColor(document.getElementById("rbSecondary").value);
+      rb.glow = !!document.getElementById("rbGlow").checked;
+      prev.innerHTML = robotSvg(rb);
+      // required: should change immediately
+      applyRobotEverywhere();
     }
 
-    // Event listeners
-    signInBtn.addEventListener("click", signIn);
-    signOutBtn.addEventListener("click", signOut);
-    sendBtn.addEventListener("click", sendMessage);
-    messageInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage();
-      }
+    ["rbHead","rbEyes","rbMouth","rbAntenna","rbBody","rbPrimary","rbSecondary","rbGlow"].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("change", syncRobot);
+      el.addEventListener("input", syncRobot);
     });
+  }
 
-    // Initialize UI on page load
-    window.addEventListener("load", () => {
-      updateUIForAuth(false);
+  // ======================
+  // Chat
+  // ======================
+  function aiTagFromMeta(ai_meta){
+    if(!ai_meta) return getAI() ? "IA" : "Local";
+    if(ai_meta.ai_used) return "IA";
+    if(ai_meta.ai_mode_requested && !ai_meta.ai_used) return "Local (IA falló)";
+    return getAI() ? "IA" : "Local";
+  }
+
+  function maybeHandleAiMeta(ai_meta){
+    if(!ai_meta) return;
+
+    if(ai_meta.ai_mode_requested && !ai_meta.ai_used && ai_meta.suggestion === "SWITCH_TO_LOCAL"){
+      const code = ai_meta.ai_error_code || "UNKNOWN";
+      const msg =
+        code === "QUOTA_EXCEEDED" ? "IA no disponible por cuota (OpenAI 429). Te conviene activar modo local." :
+        code === "AUTH_ERROR" ? "IA no disponible por autorización (OpenAI 401). Activa modo local o revisa la key." :
+        code === "CONNECTION_ERROR" ? "IA no disponible por conexión/timeout. Puedes continuar en modo local." :
+        code === "AI_DISABLED" ? "IA apagada o sin API key en el worker. Puedes continuar en modo local." :
+        "IA no disponible por un error. Puedes continuar en modo local.";
+
+      showAiBanner(msg);
+      setAI(false);
+    }
+  }
+
+  async function send(){
+    hideAiBanner();
+
+    const q = document.getElementById("q");
+    const question = (q.value || "").trim();
+    if(!question) return;
+
+    const worker = getWorkerUrl();
+    const debugEl = document.getElementById("debugToggle");
+    const debug = !!(debugEl && debugEl.checked);
+
+    const scope = getScope();
+    const ai_mode = getAI();
+
+    let token;
+    try{
+      token = await getAccessToken();
+    }catch(e){
+      if ((e.message || "") === "NOT_LOGGED_IN"){
+        await login();
+        return;
+      }
+      return;
+    }
+
+    const sendBtn = document.getElementById("sendBtn");
+    if(sendBtn) sendBtn.disabled = true;
+
+    addMsg("me","Tú",question, scopeLabelPretty(scope), ai_mode ? "IA" : "Local");
+    q.value = "";
+
+    try{
+      const r = await fetch(worker + "/chat", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":"Bearer " + token
+        },
+        body: JSON.stringify({ question, debug, scope, ai_mode })
+      });
+
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        if (r.status === 401){
+          showAiBanner("Sesión inválida/expirada. Vuelve a iniciar sesión.");
+          refreshAuthUI();
+        }
+        addMsg(
+          "bot",
+          "Nexo",
+          (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status),
+          "Error",
+          "Local"
+        );
+        return;
+      }
+
+      maybeHandleAiMeta(j.ai_meta);
+
+const cleanAnswer = stripSourcesFromAnswer(j.answer || "");
+addBotHtml(
+  "Nexo",
+  cleanAnswer || "Sin respuesta",
+  j.sources || [],
+  scopeLabelPretty(scope),
+  aiTagFromMeta(j.ai_meta)
+);
+    }catch(e){
+      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
+      showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");
+      setAI(false);
+      openConfig();
+    }finally{
+      if(sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  function handleKey(e){
+    if(e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  }
+
+  function quick(text){
+    setScope();
+    const el = document.getElementById("q");
+    el.value = text;
+    el.focus();
+    // NO auto-send: el usuario puede editar antes de enviar
+  }
+
+  // ======================
+  // Wire events (NO inline onclick)
+  // ======================
+  function wireEvents(){
+    document.getElementById("loginBtn").addEventListener("click", login);
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("cfgBtn").addEventListener("click", openConfig);
+
+    document.getElementById("loginBtn2").addEventListener("click", login);
+    document.getElementById("openCfgBtn2").addEventListener("click", openConfig);
+
+    document.getElementById("closeCfgBtn").addEventListener("click", closeConfig);
+    document.getElementById("testConnBtn").addEventListener("click", testConnection);
+    document.getElementById("saveCfgBtn").addEventListener("click", saveConfig);
+
+    document.getElementById("aiToggle").addEventListener("click", toggleAI);
+
+    document.getElementById("clearBtn").addEventListener("click", clearChat);
+    document.getElementById("forceLocalBtn").addEventListener("click", forceLocalMode);
+    document.getElementById("hideAiBannerBtn").addEventListener("click", hideAiBanner);
+
+    document.getElementById("sendBtn").addEventListener("click", send);
+    document.getElementById("q").addEventListener("keydown", handleKey);
+
+    // preferences
+    document.getElementById("prefsBtn").addEventListener("click", openPrefs);
+    document.getElementById("closePrefsBtn").addEventListener("click", closePrefs);
+    document.getElementById("prefsReloadBtn").addEventListener("click", async ()=>{
+      await loadPreferences();
+      renderPrefsModal();
     });
-  </script>
+    document.getElementById("prefsSaveBtn").addEventListener("click", savePreferences);
+    document.getElementById("qaAddBtn").addEventListener("click", ()=>{
+      if (!USER_PREFS) USER_PREFS = JSON.parse(JSON.stringify(PREFS_DEFAULT));
+      const id = "qa_" + Math.random().toString(36).slice(2, 10);
+      USER_PREFS.quickActions.push({ id, label: "Nueva acción", text: "Escribe aquí..." });
+      renderPrefsModal();
+    });
+  }
+
+  // ======================
+  // Init
+  // ======================
+  wireEvents();
+  refreshScopeUI();
+
+  if(localStorage.getItem(LS_AI) == null){
+    localStorage.setItem(LS_AI, DEFAULT_AI);
+  }
+  if(!localStorage.getItem(LS_WORKER)){
+    localStorage.setItem(LS_WORKER, DEFAULT_WORKER);
+  }
+  refreshAIUI();
+  refreshHeaderBadges();
+  clearChat();
+
+  authInit().catch(()=>{});
+</script>
 </body>
 </html>

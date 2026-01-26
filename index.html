@@ -632,7 +632,9 @@
 
     /* hide app until auth */
     #appMain{display:none;}
-  </style>
+  
+    .msg.bot.pending .bubble{opacity:.92}
+</style>
 </head>
 
 <body>
@@ -1333,6 +1335,57 @@ function stripSourcesFromAnswer(answer){
   }
 
   // ======================
+  // "Pensando..." (front-end only, sin streaming)
+  // ======================
+  function addBotThinking(title, metaTag, aiTag){
+    const div = document.createElement("div");
+    div.className = "msg bot pending";
+
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    div.innerHTML = `
+      <div class="avatar bot">${robotSvg(currentRobot())}</div>
+      <div class="bubble">
+        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
+        <p data-thinking style="white-space:pre-wrap; line-height:1.4">Pensando…</p>
+      </div>`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  function updateBotThinking(div, text){
+    const p = div && div.querySelector && div.querySelector("[data-thinking]");
+    if(p) p.textContent = text;
+  }
+
+  function finalizeBotThinking(div, title, answer, sources, metaTag, aiTag){
+    if(!div) return addBotHtml(title, answer, sources, metaTag, aiTag);
+
+    const srcHtml = (sources && sources.length)
+      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1)">
+           <div class="meta">Fuentes</div>
+           <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
+         </div>`
+      : "";
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    div.className = "msg bot";
+    div.innerHTML = `
+      <div class="avatar bot">${robotSvg(currentRobot())}</div>
+      <div class="bubble">
+        <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
+        <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
+        ${srcHtml}
+      </div>`;
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+
+
+  // ======================
   // Entra helpers
   // ======================
   function getTokenClaims(){
@@ -1906,6 +1959,9 @@ function stripSourcesFromAnswer(answer){
     try{
       token = await getAccessToken();
     }catch(e){
+
+      try{ clearInterval(thinkingTimer); }catch{}
+      finalizeBotThinking(thinking, "Nexo", "Error de conexión: " + (e.message || String(e)), [], scopeLabelPretty(scope), "Local");
       if ((e.message || "") === "NOT_LOGGED_IN"){
         await login();
         return;
@@ -1915,52 +1971,29 @@ function stripSourcesFromAnswer(answer){
 
     const sendBtn = document.getElementById("sendBtn");
     if(sendBtn) sendBtn.disabled = true;
-
-    addMsg("me","Tú",question, scopeLabelPretty(scope), ai_mode ? "IA" : "Local");
-    q.value = "";
-
-    try{
-      const r = await fetch(worker + "/chat", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization":"Bearer " + token
-        },
-        body: JSON.stringify({ question, debug, scope, ai_mode })
-      });
-
-      const j = await r.json().catch(()=> ({}));
-      if(!r.ok){
-        if (r.status === 401){
-          showAiBanner("Sesión inválida/expirada. Vuelve a iniciar sesión.");
-          refreshAuthUI();
-        }
-        addMsg(
-          "bot",
-          "Nexo",
-          (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status),
-          "Error",
-          "Local"
-        );
         return;
       }
 
       maybeHandleAiMeta(j.ai_meta);
 
 const cleanAnswer = stripSourcesFromAnswer(j.answer || "");
-addBotHtml(
-  "Nexo",
-  cleanAnswer || "Sin respuesta",
-  j.sources || [],
-  scopeLabelPretty(scope),
-  aiTagFromMeta(j.ai_meta)
-);
-    }catch(e){
+      clearInterval(thinkingTimer);
+      finalizeBotThinking(
+        thinking,
+        "Nexo",
+        cleanAnswer || "Sin respuesta",
+        j.sources || [],
+        scopeLabelPretty(scope),
+        aiTagFromMeta(j.ai_meta)
+      );
+}catch(e){
       addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
       showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");
       setAI(false);
       openConfig();
     }finally{
+      try{ clearInterval(thinkingTimer); }catch{}
+
       if(sendBtn) sendBtn.disabled = false;
     }
   }

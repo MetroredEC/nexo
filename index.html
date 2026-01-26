@@ -222,6 +222,31 @@
       background:rgba(255,255,255,.9);
       overflow:hidden;
     }
+    .thinking{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+    }
+    .typing-dots{
+      display:inline-flex;
+      gap:4px;
+    }
+    .typing-dots span{
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:rgba(100,116,139,.75);
+      animation:typingDots 1.1s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2){animation-delay:.15s;}
+    .typing-dots span:nth-child(3){animation-delay:.3s;}
+    .thinking-status{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
     .meta{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .meta .tag{
       font-size:11px; padding:3px 8px; border-radius:999px;
@@ -340,6 +365,10 @@
     @keyframes pulse{
       0%{transform:scale(.7); opacity:.8}
       100%{transform:scale(1.6); opacity:0}
+    }
+    @keyframes typingDots{
+      0%, 80%, 100%{transform:translateY(0); opacity:.4}
+      40%{transform:translateY(-4px); opacity:1}
     }
 
     /* ===== Toggle corporativo (Modo IA) ===== */
@@ -716,7 +745,7 @@
   </div>
 </div>
 
-<div class="versionBadge" id="versionBadge">Versión: gh-pages</div>
+<div class="versionBadge" id="versionBadge">—</div>
 
 <main id="appMain">
   <div class="grid">
@@ -1332,6 +1361,67 @@ function stripSourcesFromAnswer(answer){
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
+  function renderBotBubble(div, title, answer, sources, metaTag, aiTag){
+    if (!div) return;
+    const bubble = div.querySelector(".bubble");
+    if (!bubble) return;
+    const srcHtml = (sources && sources.length)
+      ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(226,232,240,1)">
+           <div class="meta">Fuentes</div>
+           <ul>${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noreferrer">${escapeHtml(s.title || s.url)}</a></li>`).join("")}</ul>
+         </div>`
+      : "";
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    bubble.innerHTML = `
+      <div class="meta">${escapeHtml(title)} ${tagHtml} ${aiHtml}</div>
+      <p style="white-space:pre-wrap; line-height:1.4">${escapeHtml(answer || "Sin respuesta")}</p>
+      ${srcHtml}`;
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function addThinkingBubble(metaTag, aiTag){
+    const div = document.createElement("div");
+    div.className = "msg bot";
+    const tagHtml = metaTag ? `<span class="tag">${escapeHtml(metaTag)}</span>` : "";
+    const aiHtml  = aiTag  ? `<span class="tag ai">${escapeHtml(aiTag)}</span>` : "";
+
+    div.innerHTML = `
+      <div class="avatar bot">${robotSvg(currentRobot())}</div>
+      <div class="bubble">
+        <div class="meta">Nexo ${tagHtml} ${aiHtml}</div>
+        <div class="thinking">
+          <span class="thinking-text">Pensando…</span>
+          <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        </div>
+        <div class="thinking-status" aria-live="polite">Pensando…</div>
+      </div>`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    const statusEl = div.querySelector(".thinking-status");
+    return {
+      div,
+      setStatus(text){
+        if (statusEl) statusEl.textContent = text;
+      }
+    };
+  }
+
+  function setVersionBadge(){
+    const badge = document.getElementById("versionBadge");
+    if (!badge) return;
+    const meta = document.querySelector('meta[name="app-branch"]');
+    const metaValue = meta ? String(meta.content || "").trim() : "";
+    const pathSegment = window.location.pathname
+      .split("/")
+      .filter(Boolean)
+      .find(seg => seg && seg !== "index.html") || "";
+    const label = metaValue || pathSegment || "local";
+    badge.textContent = label;
+  }
+
   // ======================
   // Entra helpers
   // ======================
@@ -1917,6 +2007,28 @@ function stripSourcesFromAnswer(answer){
     if(sendBtn) sendBtn.disabled = true;
 
     addMsg("me","Tú",question, scopeLabelPretty(scope), ai_mode ? "IA" : "Local");
+    const thinkingBubble = addThinkingBubble(scopeLabelPretty(scope), ai_mode ? "IA" : "Local");
+    const thinkingStates = [
+      "Buscando documentos…",
+      "Filtrando resultados…",
+      "Leyendo…",
+      "Armando respuesta…"
+    ];
+    let thinkingStep = 0;
+    const thinkingTimers = [];
+    const scheduleThinking = (delayMs, stateIndex) => {
+      const timer = setTimeout(() => {
+        if (thinkingStep <= stateIndex) {
+          thinkingStep = stateIndex;
+          thinkingBubble.setStatus(thinkingStates[stateIndex]);
+        }
+      }, delayMs);
+      thinkingTimers.push(timer);
+    };
+    thinkingBubble.setStatus(thinkingStates[0]);
+    scheduleThinking(1400, 1);
+    scheduleThinking(2800, 2);
+    scheduleThinking(4200, 3);
     q.value = "";
 
     try{
@@ -1929,16 +2041,18 @@ function stripSourcesFromAnswer(answer){
         body: JSON.stringify({ question, debug, scope, ai_mode })
       });
 
+      thinkingBubble.setStatus("Descargando…");
       const j = await r.json().catch(()=> ({}));
       if(!r.ok){
         if (r.status === 401){
           showAiBanner("Sesión inválida/expirada. Vuelve a iniciar sesión.");
           refreshAuthUI();
         }
-        addMsg(
-          "bot",
+        renderBotBubble(
+          thinkingBubble.div,
           "Nexo",
           (j && (j.error || j.message)) ? (j.error || j.message) : ("Error HTTP " + r.status),
+          [],
           "Error",
           "Local"
         );
@@ -1947,20 +2061,30 @@ function stripSourcesFromAnswer(answer){
 
       maybeHandleAiMeta(j.ai_meta);
 
-const cleanAnswer = stripSourcesFromAnswer(j.answer || "");
-addBotHtml(
-  "Nexo",
-  cleanAnswer || "Sin respuesta",
-  j.sources || [],
-  scopeLabelPretty(scope),
-  aiTagFromMeta(j.ai_meta)
-);
+      const cleanAnswer = stripSourcesFromAnswer(j.answer || "");
+      thinkingBubble.setStatus("Armando respuesta…");
+      renderBotBubble(
+        thinkingBubble.div,
+        "Nexo",
+        cleanAnswer || "Sin respuesta",
+        j.sources || [],
+        scopeLabelPretty(scope),
+        aiTagFromMeta(j.ai_meta)
+      );
     }catch(e){
-      addMsg("bot","Nexo","Error de conexión: " + (e.message || String(e)), "Error", "Local");
+      renderBotBubble(
+        thinkingBubble.div,
+        "Nexo",
+        "Error de conexión: " + (e.message || String(e)),
+        [],
+        "Error",
+        "Local"
+      );
       showAiBanner("Error de conexión con el worker. Puedes continuar en modo local.");
       setAI(false);
       openConfig();
     }finally{
+      thinkingTimers.forEach(timer => clearTimeout(timer));
       if(sendBtn) sendBtn.disabled = false;
     }
   }
@@ -2035,6 +2159,7 @@ addBotHtml(
   refreshAIUI();
   refreshHeaderBadges();
   clearChat();
+  setVersionBadge();
 
   authInit().catch(()=>{});
 </script>
